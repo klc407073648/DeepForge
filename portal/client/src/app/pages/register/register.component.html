@@ -1,19 +1,32 @@
 <div class="register-container">
-  <nz-card class="register-card" [nzBordered]="false">
+  <div class="register-backdrop" aria-hidden="true">
+    <div class="register-backdrop__orb register-backdrop__orb--a"></div>
+    <div class="register-backdrop__orb register-backdrop__orb--b"></div>
+    <div class="register-backdrop__orb register-backdrop__orb--c"></div>
+    <div class="register-backdrop__mesh"></div>
+  </div>
+
+  <nz-card class="register-card" [nzBordered]="false" [nzHoverable]="true">
     <div class="register-header">
-      <h2>{{ 'register.title' | translate }}</h2>
-      <p>{{ 'register.subtitle' | translate }}</p>
+      <div class="register-header__title-row">
+        <div class="register-header__mark" aria-hidden="true">
+          <nz-icon nzType="user-add" nzTheme="outline" />
+        </div>
+        <h2>{{ 'register.title' | translate }}</h2>
+      </div>
+      <p class="register-header__subtitle">{{ 'register.subtitle' | translate }}</p>
     </div>
 
     <form
       nz-form
       [nzLayout]="'vertical'"
       [formGroup]="registerForm"
+      class="register-form"
       (ngSubmit)="onSubmit()"
     >
       <nz-form-item>
         <nz-form-label>{{ 'common.username' | translate }}</nz-form-label>
-        <nz-input-group>
+        <nz-input-group [nzPrefix]="usernamePrefixTpl" class="register-input-group">
           <input
             nz-input
             formControlName="username"
@@ -28,7 +41,11 @@
 
       <nz-form-item>
         <nz-form-label>{{ 'common.password' | translate }}</nz-form-label>
-        <nz-input-group [nzSuffix]="passwordSuffixTemplate">
+        <nz-input-group
+          [nzPrefix]="passwordPrefixTpl"
+          [nzSuffix]="passwordSuffixTemplate"
+          class="register-input-group"
+        >
           <input
             nz-input
             [type]="passwordVisible ? 'text' : 'password'"
@@ -46,7 +63,11 @@
         <nz-form-label>{{
           'common.confirmPassword' | translate
         }}</nz-form-label>
-        <nz-input-group [nzSuffix]="confirmPasswordSuffixTemplate">
+        <nz-input-group
+          [nzPrefix]="confirmPasswordPrefixTpl"
+          [nzSuffix]="confirmPasswordSuffixTemplate"
+          class="register-input-group"
+        >
           <input
             nz-input
             [type]="confirmPasswordVisible ? 'text' : 'password'"
@@ -60,11 +81,12 @@
         </nz-input-group>
       </nz-form-item>
 
-      <nz-form-item>
+      <nz-form-item class="register-submit-item">
         <button
           nz-button
           nzType="primary"
           nzBlock
+          class="register-submit-btn"
           [nzSize]="'large'"
           [nzLoading]="loading"
           type="submit"
@@ -83,9 +105,21 @@
   </nz-card>
 </div>
 
+<ng-template #usernamePrefixTpl>
+  <span class="register-input-prefix"><nz-icon nzType="user" nzTheme="outline" /></span>
+</ng-template>
+
+<ng-template #passwordPrefixTpl>
+  <span class="register-input-prefix"><nz-icon nzType="lock" nzTheme="outline" /></span>
+</ng-template>
+
+<ng-template #confirmPasswordPrefixTpl>
+  <span class="register-input-prefix"><nz-icon nzType="lock" nzTheme="outline" /></span>
+</ng-template>
+
 <ng-template #passwordSuffixTemplate>
   <nz-icon
-    class="ant-input-password-icon"
+    class="ant-input-password-icon register-password-toggle"
     [nzType]="passwordVisible ? 'eye-invisible' : 'eye'"
     (click)="passwordVisible = !passwordVisible"
   />
@@ -93,7 +127,7 @@
 
 <ng-template #confirmPasswordSuffixTemplate>
   <nz-icon
-    class="ant-input-password-icon"
+    class="ant-input-password-icon register-password-toggle"
     [nzType]="confirmPasswordVisible ? 'eye-invisible' : 'eye'"
     (click)="confirmPasswordVisible = !confirmPasswordVisible"
   />
