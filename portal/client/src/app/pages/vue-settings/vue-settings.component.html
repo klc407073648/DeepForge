@@ -1,0 +1,43 @@
+<div class="vue-settings-container">
+  <!-- <div class="header">
+    <h2>{{ 'navigation.systemSettings' | translate }}</h2>
+    <button nz-button nzType="primary" routerLink="/welcome">
+      <i nz-icon nzType="arrow-left"></i>
+      {{ 'common.back' | translate }}
+    </button>
+  </div>
+
+  <div class="loading-section" *ngIf="isLoading">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <p>正在加载系统设置...</p>
+    </div>
+  </div>
+
+  <div class="error-section" *ngIf="loadError && !isLoading">
+    <div class="error-content">
+      <h3>⚠️ 加载失败</h3>
+      <div class="error-details">
+        <pre>{{ loadError }}</pre>
+      </div>
+      <div class="error-actions">
+        <button nz-button nzType="primary" (click)="loadVueApp()">
+          <i nz-icon nzType="reload"></i>
+          重试
+        </button>
+        <button nz-button nzType="default" (click)="openVueAppDirectly()">
+          <i nz-icon nzType="external-link"></i>
+          直接打开Vue应用
+        </button>
+      </div>
+    </div>
+  </div> -->
+
+  <!-- Vue应用容器 -->
+  <div
+    #vueContainer
+    id="vue-settings-container"
+    class="vue-container"
+    [style.display]="isLoading || loadError ? 'none' : 'block'"
+  ></div>
+</div>

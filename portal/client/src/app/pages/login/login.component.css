@@ -1,0 +1,283 @@
+.login-container {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  padding-top: max(24px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #2d1b4e;
+}
+
+.login-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.login-backdrop__mesh {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 92, 255, 0.35), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(99, 102, 241, 0.2), transparent),
+    radial-gradient(ellipse 50% 35% at 0% 80%, rgba(168, 85, 247, 0.18), transparent),
+    linear-gradient(165deg, #1e1033 0%, #3d2668 45%, #2a1850 100%);
+}
+
+.login-backdrop__orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+  animation: login-orb-float 18s ease-in-out infinite;
+}
+
+.login-backdrop__orb--a {
+  width: min(420px, 55vw);
+  height: min(420px, 55vw);
+  top: -12%;
+  left: -8%;
+  background: #7c5cff;
+  animation-delay: 0s;
+}
+
+.login-backdrop__orb--b {
+  width: min(360px, 48vw);
+  height: min(360px, 48vw);
+  bottom: -10%;
+  right: -6%;
+  background: #c084fc;
+  animation-delay: -6s;
+}
+
+.login-backdrop__orb--c {
+  width: min(280px, 40vw);
+  height: min(280px, 40vw);
+  top: 38%;
+  right: 12%;
+  background: #6366f1;
+  opacity: 0.35;
+  animation-delay: -12s;
+}
+
+@keyframes login-orb-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(2%, 3%) scale(1.04);
+  }
+  66% {
+    transform: translate(-2%, 1%) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-backdrop__orb {
+    animation: none;
+  }
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 4px 24px rgba(45, 27, 78, 0.08),
+    0 24px 64px rgba(30, 16, 51, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.35s ease;
+}
+
+.login-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px rgba(45, 27, 78, 0.1),
+    0 32px 80px rgba(30, 16, 51, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+:host ::ng-deep .login-card.ant-card .ant-card-body {
+  padding: 32px 36px 28px;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.login-header__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.login-header__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #6366f1 0%, #7c3aed 100%);
+  color: #fff;
+  font-size: 22px;
+  box-shadow:
+    0 4px 16px rgba(99, 102, 241, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.login-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1a1a2e;
+  margin: 0;
+  line-height: 1.25;
+  text-align: start;
+}
+
+.login-header__subtitle {
+  font-size: 0.9375rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+  max-width: 280px;
+  margin-inline: auto;
+}
+
+:host ::ng-deep .login-form .ant-form-item {
+  margin-bottom: 20px;
+}
+
+:host ::ng-deep .login-form .ant-form-item-label > label {
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.login-input-prefix {
+  display: inline-flex;
+  color: #94a3b8;
+  margin-inline: 2px;
+  transition: color 0.2s ease;
+}
+
+:host ::ng-deep .login-input-group.ant-input-affix-wrapper {
+  border-radius: 12px;
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  box-shadow: none;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+:host ::ng-deep .login-input-group.ant-input-affix-wrapper:hover {
+  border-color: #c7d2fe;
+  background: #fff;
+}
+
+:host ::ng-deep .login-input-group.ant-input-affix-wrapper-focused {
+  border-color: #6366f1 !important;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+:host ::ng-deep .login-input-group.ant-input-affix-wrapper-focused .login-input-prefix {
+  color: #6366f1;
+}
+
+:host ::ng-deep .login-input-group.ant-input-affix-wrapper input.ant-input {
+  background: transparent;
+}
+
+.login-submit-item {
+  margin-top: 8px;
+  margin-bottom: 0 !important;
+}
+
+:host ::ng-deep .login-submit-btn.ant-btn-primary {
+  height: 48px;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 55%, #6d28d9 100%);
+  box-shadow:
+    0 4px 14px rgba(99, 102, 241, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+:host ::ng-deep .login-submit-btn.ant-btn-primary:not(:disabled):hover {
+  filter: brightness(1.06);
+  box-shadow:
+    0 6px 20px rgba(99, 102, 241, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+:host ::ng-deep .login-submit-btn.ant-btn-primary:not(:disabled):active {
+  transform: scale(0.99);
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.login-footer p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.login-footer a {
+  color: #6366f1;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.login-footer a:hover {
+  color: #4f46e5;
+  text-decoration: none;
+}
+
+.ant-input-password-icon,
+.login-password-toggle {
+  cursor: pointer;
+  color: #94a3b8;
+  transition: color 0.2s ease;
+}
+
+.ant-input-password-icon:hover,
+.login-password-toggle:hover {
+  color: #6366f1;
+}

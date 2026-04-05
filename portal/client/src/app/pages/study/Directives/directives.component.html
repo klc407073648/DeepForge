@@ -1,0 +1,131 @@
+<div class="directives-demo">
+  <div class="demo-header">
+    <h2>Angular 指令演示</h2>
+    <p>这是一个自定义的 <code>appHighlight</code> 指令演示</p>
+  </div>
+
+  <div class="demo-section">
+    <h3>默认黄色高亮</h3>
+    <p [appHighlight]="'#ffeb3b'">鼠标悬停高亮 - 使用默认黄色 (#ffeb3b)</p>
+  </div>
+
+  <div class="demo-section">
+    <h3>自定义颜色高亮</h3>
+    <p [appHighlight]="'#87ceeb'" [defaultColor]="'#e8e8e8'">
+      自定义高亮颜色 - 悬停时显示天蓝色，默认浅灰色
+    </p>
+  </div>
+
+  <div class="demo-section">
+    <h3>更多颜色示例</h3>
+    <p [appHighlight]="'#ff6b6b'" [defaultColor]="'#f8f9fa'">
+      红色高亮 - 悬停时显示红色
+    </p>
+    <p [appHighlight]="'#4ecdc4'" [defaultColor]="'#ffffff'">
+      青色高亮 - 悬停时显示青色
+    </p>
+    <p [appHighlight]="'#45b7d1'" [defaultColor]="'#f0f0f0'">
+      蓝色高亮 - 悬停时显示蓝色
+    </p>
+    <p [appHighlight]="'#98fb98'" [defaultColor]="'#f5f5f5'">
+      绿色高亮 - 悬停时显示浅绿色
+    </p>
+  </div>
+
+  <!-- 结构型指令演示 -->
+  <div class="demo-section">
+    <h3>结构型指令演示</h3>
+    
+    <!-- appUnless 指令 -->
+    <div class="directive-example">
+      <h4>1. appUnless 指令（除非条件为真，否则显示内容）</h4>
+      <div class="controls">
+        <label nz-switch [(ngModel)]="showContent" (ngModelChange)="toggleContent()">
+          显示内容: {{ showContent ? '是' : '否' }}
+        </label>
+      </div>
+      <div class="example-content">
+        <p *appUnless="showContent" class="unless-content">
+          这段内容只有在 showContent 为 false 时才会显示
+        </p>
+        <p *ngIf="showContent" class="if-content">
+          这段内容只有在 showContent 为 true 时才会显示
+        </p>
+      </div>
+    </div>
+
+    <!-- appIfAdmin 指令 -->
+    <div class="directive-example">
+      <h4>2. appIfAdmin 指令（管理员权限检查）</h4>
+      <div class="controls">
+        <label nz-switch [(ngModel)]="isAdmin" (ngModelChange)="toggleAdmin()">
+          管理员权限: {{ isAdmin ? '是' : '否' }}
+        </label>
+      </div>
+      <div class="example-content">
+        <div *appIfAdmin="isAdmin" class="admin-content">
+          <i nz-icon nzType="crown" nzTheme="fill" style="color: #faad14;"></i>
+          这是管理员专用内容，只有管理员才能看到！
+        </div>
+        <div *ngIf="!isAdmin" class="user-content">
+          <i nz-icon nzType="user"></i>
+          普通用户内容
+        </div>
+      </div>
+    </div>
+
+    <!-- appTimeDisplay 指令 -->
+    <div class="directive-example">
+      <h4>3. appTimeDisplay 指令（实时时间显示）</h4>
+      <div class="controls">
+        <button nz-button nzType="primary" (click)="toggleTimeFormat()">
+          切换时间格式: {{ timeFormat === '12' ? '12小时制' : '24小时制' }}
+        </button>
+      </div>
+      <div class="example-content">
+        <div class="time-display">
+          <span>当前时间: </span>
+          <span [appTimeDisplayAttr]="timeFormat" class="time-text">加载中...</span>
+        </div>
+        <p><small>这个时间会每秒自动更新</small></p>
+      </div>
+    </div>
+
+    <!-- 代码示例 -->
+    <div class="code-examples">
+      <h4>代码示例</h4>
+      <div class="code-block">
+        <h5>appUnless 指令</h5>
+        <pre><code>&lt;p *appUnless="showContent"&gt;
+  这段内容只有在条件为 false 时显示
+&lt;/p&gt;</code></pre>
+      </div>
+      
+      <div class="code-block">
+        <h5>appIfAdmin 指令</h5>
+        <pre><code>&lt;div *appIfAdmin="isAdmin"&gt;
+  管理员专用内容
+&lt;/div&gt;</code></pre>
+      </div>
+      
+      <div class="code-block">
+        <h5>appTimeDisplayAttr 指令（属性型）</h5>
+        <pre><code>&lt;span [appTimeDisplayAttr]="'12'"&gt;加载中...&lt;/span&gt;
+&lt;span [appTimeDisplayAttr]="'24'"&gt;加载中...&lt;/span&gt;</code></pre>
+      </div>
+      
+      <div class="code-block">
+        <h5>appTimeDisplay 指令（结构型）</h5>
+        <pre><code>&lt;span *appTimeDisplay="'12'"&gt;&lt;/span&gt;
+&lt;span *appTimeDisplay="'24'"&gt;&lt;/span&gt;</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-actions">
+    <button nz-button nzType="primary" routerLink="/study">
+      <i nz-icon nzType="arrow-left"></i>
+      返回学习模块
+    </button>
+  </div>
+</div>

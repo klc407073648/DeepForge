@@ -1,0 +1,62 @@
+.welcome-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.welcome-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.welcome-header h1 {
+  color: #1890ff;
+  margin-bottom: 8px;
+}
+
+.welcome-header p {
+  font-size: 16px;
+  color: #666;
+}
+
+.user-info,
+.permissions-info,
+.quick-actions {
+  margin-bottom: 24px;
+}
+
+.info-card {
+  background: #fafafa;
+}
+
+.info-item,
+.permission-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.info-item i,
+.permission-item i {
+  font-size: 16px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.action-button {
+  min-width: 160px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}

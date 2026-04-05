@@ -1,0 +1,95 @@
+<div class="role-management-container">
+  <nz-card [nzTitle]="'roleManagement.title' | translate">
+    <!-- 搜索区域 -->
+    <div class="search-area">
+      <nz-input-group [nzSuffix]="suffixIconSearch" style="width: 300px;">
+        <input
+          type="text"
+          nz-input
+          [placeholder]="'roleManagement.searchPlaceholder' | translate"
+          [(ngModel)]="searchUsername"
+          (keyup.enter)="onSearch()"
+        />
+      </nz-input-group>
+      <button nz-button nzType="primary" (click)="onSearch()" style="margin-left: 8px;">
+        <nz-icon nzType="search"></nz-icon>
+        {{ 'common.search' | translate }}
+      </button>
+      <button nz-button (click)="onReset()" style="margin-left: 8px;">
+        {{ 'common.reset' | translate }}
+      </button>
+    </div>
+
+    <ng-template #suffixIconSearch>
+      <nz-icon nzType="search"></nz-icon>
+    </ng-template>
+
+    <!-- 提示信息 -->
+    <div class="info-alert">
+      <nz-icon nzType="info-circle" nzTheme="fill" style="color: #1890ff;"></nz-icon>
+      <span>{{ 'roleManagement.tip' | translate }}</span>
+    </div>
+
+    <!-- 表格 -->
+    <nz-table
+      #userTable
+      [nzData]="userList"
+      [nzLoading]="loading"
+      [nzTotal]="total"
+      [nzPageSize]="pageSize"
+      [nzPageIndex]="pageIndex"
+      [nzFrontPagination]="false"
+      [nzShowSizeChanger]="true"
+      [nzPageSizeOptions]="[10, 20, 50, 100]"
+      (nzPageIndexChange)="onPageChange($event)"
+      (nzPageSizeChange)="onPageSizeChange($event)"
+      [nzScroll]="{ x: '800px' }"
+    >
+      <thead>
+        <tr>
+          <th>{{ 'userList.id' | translate }}</th>
+          <th>{{ 'common.username' | translate }}</th>
+          <th>{{ 'roleManagement.currentRole' | translate }}</th>
+          <th>{{ 'roleManagement.actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of userTable.data">
+          <td>{{ user.id }}</td>
+          <td>
+            {{ user.username }}
+            <nz-tag *ngIf="user.username === 'admin'" nzColor="gold">
+              {{ 'roleManagement.systemAdmin' | translate }}
+            </nz-tag>
+          </td>
+          <td>
+            <nz-tag [nzColor]="getRoleColor(user.role)">
+              {{ getRoleText(user.role) }}
+            </nz-tag>
+          </td>
+          <td>
+            <ng-container *ngIf="canEditRole(user); else cannotEdit">
+              <nz-select
+                [(ngModel)]="user.role"
+                style="width: 150px;"
+                (ngModelChange)="updateRole(user, $event)"
+                nz-popconfirm
+                [nzPopconfirmTitle]="'roleManagement.confirmChange' | translate"
+                nzPopconfirmPlacement="top"
+              >
+                <nz-option
+                  *ngFor="let option of roleOptions"
+                  [nzValue]="option.value"
+                  [nzLabel]="option.label | translate"
+                ></nz-option>
+              </nz-select>
+            </ng-container>
+            <ng-template #cannotEdit>
+              <span style="color: #999;">{{ 'roleManagement.cannotEdit' | translate }}</span>
+            </ng-template>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+</div>

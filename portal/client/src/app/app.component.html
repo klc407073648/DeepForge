@@ -1,0 +1,110 @@
+<!-- app.component.html -->
+@if (isAuthShell) {
+  <div class="app-auth-shell">
+    <router-outlet></router-outlet>
+  </div>
+} @else {
+<nz-layout style="min-height: 100vh">
+  <!-- 顶部导航 -->
+  <nz-header
+    style="
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e8e8e8;
+    "
+  >
+    @if (this.currentUser) {
+      <ul
+        nz-menu
+        nzTheme="light"
+        nzMode="horizontal"
+        style="line-height: 64px; flex: 1"
+      >
+        <li
+          nz-menu-item
+          [class.ant-menu-item-selected]="currentModule === 'manage'"
+        >
+          <a routerLink="/welcome">{{ 'navigation.homePage' | translate }}</a>
+        </li>
+        <li
+          nz-menu-item
+          [class.ant-menu-item-selected]="currentModule === 'manage'"
+        >
+          <a routerLink="/manage">{{
+            'navigation.userManagement' | translate
+          }}</a>
+        </li>
+        <li
+          nz-menu-item
+          [class.ant-menu-item-selected]="currentModule === 'settings'"
+        >
+          <a routerLink="/vue-settings">{{
+            'navigation.systemSettings' | translate
+          }}</a>
+        </li>
+        <li
+          nz-menu-item
+          [class.ant-menu-item-selected]="currentModule === 'study'"
+        >
+          <a routerLink="/study">{{ 'navigation.study' | translate }}</a>
+        </li>
+      </ul>
+      <!-- 右侧组合：语言切换 + 用户信息 -->
+      <div style="display: flex; align-items: center; gap: 16px; padding: 10">
+        <app-language-switcher></app-language-switcher>
+
+        <button nz-button nzType="primary" (click)="logout()">
+          <i nz-icon nzType="logout"></i>
+          {{ 'common.logout' | translate }}
+        </button>
+
+        <!-- @else {
+      <nz-avatar [nzSize]="'small'" nzIcon="user"></nz-avatar>
+      <span>{{ getUserDisplayName() }}</span>
+      <span style="color: #1890ff; font-size: 12px">({{ getUserRoleText() }})</span>
+    } -->
+      </div>
+    }
+  </nz-header>
+
+  <nz-layout>
+    <!-- 侧边栏：只在有模块时显示 -->
+    <nz-sider
+      *ngIf="currentModule"
+      width="220"
+      style="background: #fff; border-right: 1px solid #e8e8e8"
+    >
+      <ul
+        nz-menu
+        nzTheme="light"
+        nzMode="inline"
+        [nzInlineCollapsed]="isCollapsed"
+      >
+        <li
+          nz-menu-item
+          *ngFor="let item of sidebarMenu"
+          routerLinkActive="ant-menu-item-selected"
+        >
+          <a [routerLink]="item.link">{{ item.title | translate }}</a>
+        </li>
+      </ul>
+    </nz-sider>
+
+    <!-- 内容区 -->
+    <nz-layout style="padding: 0 24px 24px">
+      <nz-content
+        style="
+          margin: 24px 0 0;
+          overflow: initial;
+          background: #fff;
+          padding: 24px;
+        "
+      >
+        <router-outlet></router-outlet>
+      </nz-content>
+    </nz-layout>
+  </nz-layout>
+</nz-layout>
+}

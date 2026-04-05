@@ -1,0 +1,100 @@
+<div class="login-container">
+  <div class="login-backdrop" aria-hidden="true">
+    <div class="login-backdrop__orb login-backdrop__orb--a"></div>
+    <div class="login-backdrop__orb login-backdrop__orb--b"></div>
+    <div class="login-backdrop__orb login-backdrop__orb--c"></div>
+    <div class="login-backdrop__mesh"></div>
+  </div>
+
+  <nz-card class="login-card" [nzBordered]="false" [nzHoverable]="true">
+    <div class="login-header">
+      <div class="login-header__title-row">
+        <div class="login-header__mark" aria-hidden="true">
+          <nz-icon nzType="safety-certificate" nzTheme="outline" />
+        </div>
+        <h2>{{ 'login.title' | translate }}</h2>
+      </div>
+      <p class="login-header__subtitle">{{ 'login.subtitle' | translate }}</p>
+    </div>
+
+    <form
+      nz-form
+      [nzLayout]="'vertical'"
+      [formGroup]="loginForm"
+      class="login-form"
+      (ngSubmit)="onSubmit()"
+    >
+      <nz-form-item>
+        <nz-form-label>{{ 'common.username' | translate }}</nz-form-label>
+        <nz-input-group [nzPrefix]="usernamePrefixTpl" class="login-input-group">
+          <input
+            nz-input
+            formControlName="username"
+            [placeholder]="'login.usernamePlaceholder' | translate"
+            [nzSize]="'large'"
+          />
+          <app-validation-message
+            [control]="loginForm.get('username')"
+          ></app-validation-message>
+        </nz-input-group>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>{{ 'common.password' | translate }}</nz-form-label>
+        <nz-input-group
+          [nzPrefix]="passwordPrefixTpl"
+          [nzSuffix]="suffixTemplate"
+          class="login-input-group"
+        >
+          <input
+            nz-input
+            [type]="passwordVisible ? 'text' : 'password'"
+            formControlName="password"
+            [placeholder]="'login.passwordPlaceholder' | translate"
+            [nzSize]="'large'"
+          />
+          <app-validation-message
+            [control]="loginForm.get('password')"
+          ></app-validation-message>
+        </nz-input-group>
+      </nz-form-item>
+
+      <nz-form-item class="login-submit-item">
+        <button
+          nz-button
+          nzType="primary"
+          nzBlock
+          class="login-submit-btn"
+          [nzSize]="'large'"
+          [nzLoading]="loading"
+          type="submit"
+        >
+          {{ 'login.loginButton' | translate }}
+        </button>
+      </nz-form-item>
+    </form>
+
+    <div class="login-footer">
+      <p>
+        {{ 'login.noAccount' | translate }}
+        <a (click)="goToRegister()">{{ 'login.goToRegister' | translate }}</a>
+      </p>
+    </div>
+  </nz-card>
+</div>
+
+<ng-template #usernamePrefixTpl>
+  <span class="login-input-prefix"><nz-icon nzType="user" nzTheme="outline" /></span>
+</ng-template>
+
+<ng-template #passwordPrefixTpl>
+  <span class="login-input-prefix"><nz-icon nzType="lock" nzTheme="outline" /></span>
+</ng-template>
+
+<ng-template #suffixTemplate>
+  <nz-icon
+    class="ant-input-password-icon login-password-toggle"
+    [nzType]="passwordVisible ? 'eye-invisible' : 'eye'"
+    (click)="passwordVisible = !passwordVisible"
+  />
+</ng-template>

@@ -1,0 +1,100 @@
+<div class="register-container">
+  <nz-card class="register-card" [nzBordered]="false">
+    <div class="register-header">
+      <h2>{{ 'register.title' | translate }}</h2>
+      <p>{{ 'register.subtitle' | translate }}</p>
+    </div>
+
+    <form
+      nz-form
+      [nzLayout]="'vertical'"
+      [formGroup]="registerForm"
+      (ngSubmit)="onSubmit()"
+    >
+      <nz-form-item>
+        <nz-form-label>{{ 'common.username' | translate }}</nz-form-label>
+        <nz-input-group>
+          <input
+            nz-input
+            formControlName="username"
+            [placeholder]="'register.usernamePlaceholder' | translate"
+            [nzSize]="'large'"
+          />
+          <app-validation-message
+            [control]="registerForm.get('username')"
+          ></app-validation-message>
+        </nz-input-group>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>{{ 'common.password' | translate }}</nz-form-label>
+        <nz-input-group [nzSuffix]="passwordSuffixTemplate">
+          <input
+            nz-input
+            [type]="passwordVisible ? 'text' : 'password'"
+            formControlName="password"
+            [placeholder]="'register.passwordPlaceholder' | translate"
+            [nzSize]="'large'"
+          />
+          <app-validation-message
+            [control]="registerForm.get('password')"
+          ></app-validation-message>
+        </nz-input-group>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>{{
+          'common.confirmPassword' | translate
+        }}</nz-form-label>
+        <nz-input-group [nzSuffix]="confirmPasswordSuffixTemplate">
+          <input
+            nz-input
+            [type]="confirmPasswordVisible ? 'text' : 'password'"
+            formControlName="confirmPassword"
+            [placeholder]="'register.confirmPasswordPlaceholder' | translate"
+            [nzSize]="'large'"
+          />
+          <app-validation-message
+            [control]="registerForm.get('confirmPassword')"
+          ></app-validation-message>
+        </nz-input-group>
+      </nz-form-item>
+
+      <nz-form-item>
+        <button
+          nz-button
+          nzType="primary"
+          nzBlock
+          [nzSize]="'large'"
+          [nzLoading]="loading"
+          type="submit"
+        >
+          {{ 'register.registerButton' | translate }}
+        </button>
+      </nz-form-item>
+    </form>
+
+    <div class="register-footer">
+      <p>
+        {{ 'register.hasAccount' | translate }}
+        <a (click)="goToLogin()">{{ 'register.goToLogin' | translate }}</a>
+      </p>
+    </div>
+  </nz-card>
+</div>
+
+<ng-template #passwordSuffixTemplate>
+  <nz-icon
+    class="ant-input-password-icon"
+    [nzType]="passwordVisible ? 'eye-invisible' : 'eye'"
+    (click)="passwordVisible = !passwordVisible"
+  />
+</ng-template>
+
+<ng-template #confirmPasswordSuffixTemplate>
+  <nz-icon
+    class="ant-input-password-icon"
+    [nzType]="confirmPasswordVisible ? 'eye-invisible' : 'eye'"
+    (click)="confirmPasswordVisible = !confirmPasswordVisible"
+  />
+</ng-template>

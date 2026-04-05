@@ -1,0 +1,37 @@
+.language-switcher-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.3s;
+}
+
+.language-switcher-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.flag {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.language-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.check-icon {
+  margin-left: auto;
+  color: #1890ff;
+}
+
+.ant-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ant-menu-item-selected {
+  background-color: #e6f7ff;
+}

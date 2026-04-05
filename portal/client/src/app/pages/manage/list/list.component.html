@@ -1,0 +1,66 @@
+<div class="user-list-container">
+  <nz-card [nzTitle]="'userList.title' | translate">
+    <!-- 搜索区域 - 仅管理员可见 -->
+    <div class="search-area" *ngIf="isAdmin">
+      <nz-input-group [nzSuffix]="suffixIconSearch" style="width: 300px;">
+        <input
+          type="text"
+          nz-input
+          [placeholder]="'userList.searchPlaceholder' | translate"
+          [(ngModel)]="searchUsername"
+          (keyup.enter)="onSearch()"
+        />
+      </nz-input-group>
+      <button nz-button nzType="primary" (click)="onSearch()" style="margin-left: 8px;">
+        <nz-icon nzType="search"></nz-icon>
+        {{ 'common.search' | translate }}
+      </button>
+      <button nz-button (click)="onReset()" style="margin-left: 8px;">
+        {{ 'common.reset' | translate }}
+      </button>
+    </div>
+
+    <ng-template #suffixIconSearch>
+      <nz-icon nzType="search"></nz-icon>
+    </ng-template>
+
+    <!-- 表格 -->
+    <nz-table
+      #userTable
+      [nzData]="userList"
+      [nzLoading]="loading"
+      [nzTotal]="total"
+      [nzPageSize]="pageSize"
+      [nzPageIndex]="pageIndex"
+      [nzFrontPagination]="false"
+      [nzShowSizeChanger]="true"
+      [nzPageSizeOptions]="[10, 20, 50, 100]"
+      (nzPageIndexChange)="onPageChange($event)"
+      (nzPageSizeChange)="onPageSizeChange($event)"
+      [nzScroll]="{ x: '800px' }"
+    >
+      <thead>
+        <tr>
+          <th>{{ 'userList.id' | translate }}</th>
+          <th>{{ 'common.username' | translate }}</th>
+          <th>{{ 'userList.role' | translate }}</th>
+          <th>{{ 'userList.createdAt' | translate }}</th>
+          <th>{{ 'userList.lastLoginAt' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of userTable.data">
+          <td>{{ user.id }}</td>
+          <td>{{ user.username }}</td>
+          <td>
+            <nz-tag [nzColor]="user.role === 'admin' ? 'red' : 'blue'">
+              {{ user.role === 'admin' ? ('common.admin' | translate) : ('common.user' | translate) }}
+            </nz-tag>
+          </td>
+          <td>{{ user.createdAt | date: 'yyyy-MM-dd HH:mm:ss' }}</td>
+          <td>{{ user.lastLoginAt ? (user.lastLoginAt | date: 'yyyy-MM-dd HH:mm:ss') : '-' }}</td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+</div>

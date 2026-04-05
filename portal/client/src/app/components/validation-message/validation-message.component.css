@@ -1,0 +1,9 @@
+.validation-message {
+  margin-top: 4px;
+}
+
+.error-item {
+  color: #ff4d4f;
+  font-size: 12px;
+  line-height: 1.4;
+}

@@ -1,0 +1,113 @@
+<div class="welcome-container">
+  <nz-card [nzBordered]="false" class="welcome-card">
+    <div class="welcome-header">
+      <h1>{{ 'welcome.title' | translate }}</h1>
+      <p>
+        {{ 'welcome.greeting' | translate: { name: currentUser?.username } }}
+      </p>
+    </div>
+
+    <div class="user-info">
+      <nz-card
+        [nzTitle]="'welcome.userInfo' | translate"
+        [nzBordered]="false"
+        class="info-card"
+      >
+        <div class="info-item">
+          <i nz-icon nzType="user" nzTheme="outline"></i>
+          <span
+            >{{ 'welcome.username' | translate
+            }}{{ currentUser?.username }}</span
+          >
+        </div>
+        <div class="info-item">
+          <i nz-icon nzType="safety-certificate" nzTheme="outline"></i>
+          <span>{{ 'welcome.role' | translate }}</span>
+          <nz-tag [nzColor]="currentUser?.role === 'admin' ? 'red' : 'blue'">
+            {{
+              currentUser?.role === 'admin'
+                ? ('common.admin' | translate)
+                : ('common.user' | translate)
+            }}
+          </nz-tag>
+        </div>
+      </nz-card>
+    </div>
+
+    <div class="permissions-info" *ngIf="currentUser?.role === 'user'">
+      <nz-card
+        [nzTitle]="'welcome.availableFeatures' | translate"
+        [nzBordered]="false"
+        class="info-card"
+      >
+        <div class="permission-item">
+          <i
+            nz-icon
+            nzType="check-circle"
+            nzTheme="fill"
+            style="color: #52c41a"
+          ></i>
+          <span>{{ 'welcome.viewUserList' | translate }}</span>
+        </div>
+        <div class="permission-item">
+          <i
+            nz-icon
+            nzType="check-circle"
+            nzTheme="fill"
+            style="color: #52c41a"
+          ></i>
+          <span>{{ 'welcome.viewWelcomePage' | translate }}</span>
+        </div>
+        <div class="permission-item">
+          <i
+            nz-icon
+            nzType="close-circle"
+            nzTheme="fill"
+            style="color: #ff4d4f"
+          ></i>
+          <span>{{ 'welcome.roleManagementAdminOnly' | translate }}</span>
+        </div>
+        <div class="permission-item">
+          <i
+            nz-icon
+            nzType="close-circle"
+            nzTheme="fill"
+            style="color: #ff4d4f"
+          ></i>
+          <span>{{ 'welcome.permissionSettingsAdminOnly' | translate }}</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div class="quick-actions">
+      <nz-card
+        [nzTitle]="'welcome.quickActions' | translate"
+        [nzBordered]="false"
+        class="info-card"
+      >
+        <div class="action-buttons">
+          <button
+            nz-button
+            nzType="primary"
+            nzSize="large"
+            routerLink="/manage"
+            class="action-button"
+          >
+            <i nz-icon nzType="team"></i>
+            {{ 'welcome.manageUsers' | translate }}
+          </button>
+          <button
+            nz-button
+            nzType="default"
+            nzSize="large"
+            routerLink="/vue-settings"
+            class="action-button"
+          >
+            <i nz-icon nzType="setting"></i>
+            {{ 'welcome.systemSettings' | translate }}
+          </button>
+        </div>
+      </nz-card>
+    </div>
+  </nz-card>
+</div>

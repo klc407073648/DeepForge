@@ -1,0 +1,17 @@
+<div
+  class="validation-message"
+  *ngIf="control && control.invalid && (control.dirty || control.touched)"
+>
+  <div *ngIf="control.errors?.['required']" class="error-item">
+    {{ 'validation.required' | translate }}
+  </div>
+  <div *ngIf="control.errors?.['invalidChars']" class="error-item">
+    {{ 'validation.usernameInvalidChars' | translate }}
+  </div>
+  <div *ngIf="control.errors?.['invalidLength']" class="error-item">
+    {{ 'validation.usernameInvalidLength' | translate }}
+  </div>
+  <div *ngIf="control.errors?.['passwordStrength']" class="error-item">
+    {{ 'validation.passwordStrength' | translate }}
+  </div>
+</div>

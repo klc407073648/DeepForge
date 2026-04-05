@@ -1,0 +1,66 @@
+.register-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.register-card {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.register-header h2 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.register-header p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.register-footer {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.register-footer p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.register-footer a {
+  color: #1890ff;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.register-footer a:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+.ant-input-password-icon {
+  cursor: pointer;
+  color: #8c8c8c;
+}
+
+.ant-input-password-icon:hover {
+  color: #1890ff;
+}

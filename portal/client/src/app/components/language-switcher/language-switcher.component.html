@@ -1,0 +1,15 @@
+<a nz-dropdown [nzDropdownMenu]="menu">
+  {{ 'language.chooseLanguage' | translate }}
+  <nz-icon nzType="down" />
+</a>
+
+<nz-dropdown-menu #menu="nzDropdownMenu">
+  <ul nz-menu nzSelectable>
+    <li nz-menu-item (click)="changeLanguage('zh')">
+      {{ 'language.chinese' | translate }}
+    </li>
+    <li nz-menu-item (click)="changeLanguage('en')">
+      {{ 'language.english' | translate }}
+    </li>
+  </ul>
+</nz-dropdown-menu>
