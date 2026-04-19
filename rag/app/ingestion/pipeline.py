@@ -1,4 +1,4 @@
-import time
+﻿import time
 import uuid
 from pathlib import Path
 
@@ -52,7 +52,7 @@ async def ingest_paths(
         _delete_source_chunks(collection, source)
 
         texts = [c.text for c in chunks]
-        embeddings = await _embed_in_batches(client, texts)
+        embeddings = await _embed_in_batches(client, texts, batch_size=settings.embedding_ingest_batch_size)
 
         ids = [f"{uuid.uuid4().hex}_{i}" for i in range(len(chunks))]
         metadatas = [
@@ -83,3 +83,4 @@ async def ingest_documents(
     settings: Settings,
 ) -> tuple[int, list[str], float]:
     return await ingest_paths(paths, collection, client, settings)
+
