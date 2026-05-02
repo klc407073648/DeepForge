@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import Field, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 
 def normalize_openai_v1_base(url: str) -> str:
     b = url.strip().rstrip("/")
@@ -11,7 +12,7 @@ def normalize_openai_v1_base(url: str) -> str:
         return "https://api.openai.com/v1"
     return b if b.endswith("/v1") else f"{b}/v1"
 
-
+# 从 .env 读变量；embedding/chat 可分 URL 与 Key，空的则回落到 OPENAI_*。
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",

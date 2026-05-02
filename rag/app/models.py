@@ -1,6 +1,9 @@
 from pydantic import BaseModel, Field
 
-
+# 请求/响应 Pydantic 模型 ↔ OpenAPI /docs
+# Pydantic 模型定义了 API 与客户端之间的“契约”：
+# 请求模型 (Request Model)：定义了客户端允许发送的数据结构和规则。
+# 响应模型 (Response Model)：定义了客户端将会收到的数据结构和内容。
 class HealthResponse(BaseModel):
     status: str
     app: str

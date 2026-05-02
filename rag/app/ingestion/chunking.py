@@ -1,8 +1,9 @@
+"""固定长度、可重叠的滑动窗口分块。"""
 from dataclasses import dataclass
-
 
 @dataclass
 class TextChunk:
+    """单个文本块及其在源文件内的序号与来源名。"""
     text: str
     chunk_index: int
     source: str
@@ -14,6 +15,7 @@ def chunk_text(
     chunk_size: int,
     chunk_overlap: int,
 ) -> list[TextChunk]:
+    """将正文按 chunk_size 切分，相邻块重叠 chunk_overlap；空文本返回 []。"""
     if chunk_size <= 0:
         raise ValueError("chunk_size must be positive")
     if chunk_overlap < 0 or chunk_overlap >= chunk_size:

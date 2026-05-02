@@ -1,3 +1,4 @@
+"""把用户问题变成向量 → 在 Chroma 里做相似度检索 → 变成一条条带元数据的片段。"""
 from dataclasses import dataclass
 from typing import Any
 
@@ -12,7 +13,6 @@ class RetrievedChunk:
     source: str
     chunk_index: int
     distance: float
-
 
 async def search_relevant_chunks(
     question: str,

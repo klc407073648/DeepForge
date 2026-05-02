@@ -4,7 +4,7 @@ from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 
-from app.config import Settings, settings
+from app.config import Settings, settings, MAX_UPLOAD_BYTES
 from app.generation.llm import OpenAICompatibleClient
 from app.generation.prompts import build_messages
 from app.ingestion.pipeline import ingest_documents
@@ -15,17 +15,17 @@ from app.retrieval.store import get_chroma_client, get_or_create_collection
 _chroma_client: Any = None
 _collection: Any = None
 
-
+# chat模型配置
 def _chat_api_configured(s: Settings) -> bool:
     return bool(s.resolved_chat_api_key.strip())
 
-
+# embedding模型配置
 def _embedding_configured(s: Settings) -> bool:
     if s.embedding_backend == "local":
         return bool(s.resolved_local_embedding_model_id.strip())
     return bool(s.resolved_embedding_api_key.strip())
 
-
+# 服务就绪状态检查
 def _service_ready_detail(s: Settings) -> tuple[bool, str | None]:
     parts: list[str] = []
     if not _chat_api_configured(s):
@@ -39,7 +39,7 @@ def _service_ready_detail(s: Settings) -> tuple[bool, str | None]:
         return True, None
     return False, "; ".join(parts)
 
-
+# embedding要求配置项
 def require_embedding_config(s: Settings) -> None:
     if not _embedding_configured(s):
         if s.embedding_backend == "local":
@@ -52,7 +52,7 @@ def require_embedding_config(s: Settings) -> None:
             detail="EMBEDDING_API_KEY or OPENAI_API_KEY is required for HTTP embedding",
         )
 
-
+# query要求配置项
 def require_query_config(s: Settings) -> None:
     require_embedding_config(s)
     if not _chat_api_configured(s):
@@ -61,7 +61,12 @@ def require_query_config(s: Settings) -> None:
             detail="CHAT_API_KEY or OPENAI_API_KEY is required for chat",
         )
 
+# @asynccontextmanager 是 Python contextlib 模块提供的一个装饰器，
+# 它的核心作用是将一个异步生成器函数（async def 函数中包含 yield）转变为一个异步上下文管理器，
+# 从而可以优雅地与 async with 语句配合使用。
 
+# 在 yield 之前做启动逻辑，yield 之后做关闭逻辑。
+# 函数功能：获取单例配置settings，并将向量库做一次初始化
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _chroma_client, _collection
@@ -72,10 +77,7 @@ async def lifespan(app: FastAPI):
     _collection = None
     _chroma_client = None
 
-
-app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
-
-
+# 获取相关配置
 def get_settings() -> Settings:
     return settings
 
@@ -88,8 +90,12 @@ def get_collection() -> Any:
 
 def get_llm_client() -> OpenAICompatibleClient:
     return OpenAICompatibleClient(settings)
+# 获取相关配置
 
+# 主程序
+app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
 
+# 健康度检查
 @app.get("/health", response_model=HealthResponse)
 async def health(s: Settings = Depends(get_settings)) -> HealthResponse:
     ready, detail = _service_ready_detail(s)
@@ -101,9 +107,7 @@ async def health(s: Settings = Depends(get_settings)) -> HealthResponse:
         detail=detail,
     )
 
-MAX_UPLOAD_BYTES = 15 * 1024 * 1024
-
-
+# 上传内容存储
 async def _save_uploads_to_temp(
     uploads: list[UploadFile],
     raw_dir: Path,
@@ -124,7 +128,7 @@ async def _save_uploads_to_temp(
         paths.append(dest)
     return paths
 
-
+# 导入
 @app.post("/ingest", response_model=IngestResponse)
 async def ingest(
     file: Annotated[
@@ -157,7 +161,7 @@ async def ingest(
                 except OSError:
                     pass
 
-
+# 批量导入
 @app.post("/ingest/batch", response_model=IngestResponse)
 async def ingest_batch(
     files: Annotated[
@@ -190,7 +194,7 @@ async def ingest_batch(
                 except OSError:
                     pass
 
-
+# 知识检索
 @app.post("/query", response_model=QueryResponse)
 async def query(
     body: QueryRequest,

@@ -1,4 +1,5 @@
-﻿import time
+﻿"""入库编排：读取文件、分块、向量化并写入 Chroma；同 source 会先删后加以实现覆盖。"""
+import time
 import uuid
 from pathlib import Path
 
@@ -7,16 +8,16 @@ from app.generation.llm import OpenAICompatibleClient
 from app.ingestion.chunking import TextChunk, chunk_text
 from app.ingestion.loaders import load_document, safe_source_name
 
-
 def _delete_source_chunks(collection: object, source: str) -> None:
+    """删除向量库中某一 source（文件名）下的全部旧 chunk。"""
     collection.delete(where={"source": source})
-
 
 async def _embed_in_batches(
     client: OpenAICompatibleClient,
     texts: list[str],
     batch_size: int = 64,
 ) -> list[list[float]]:
+    """按批次调用 embed_texts，合并为与 texts 等长的向量列表。"""
     out: list[list[float]] = []
     for i in range(0, len(texts), batch_size):
         batch = texts[i : i + batch_size]
@@ -24,13 +25,13 @@ async def _embed_in_batches(
         out.extend(part)
     return out
 
-
 async def ingest_paths(
     paths: list[Path],
     collection: object,
     client: OpenAICompatibleClient,
     settings: Settings,
 ) -> tuple[int, list[str], float]:
+    """处理多个文件路径：加载、分块、嵌入、写入 collection；返回总块数、source 列表、耗时秒。"""
     t0 = time.perf_counter()
     total_chunks = 0
     sources_out: list[str] = []
@@ -75,12 +76,12 @@ async def ingest_paths(
     elapsed = time.perf_counter() - t0
     return total_chunks, sources_out, elapsed
 
-
 async def ingest_documents(
     paths: list[Path],
     collection: object,
     client: OpenAICompatibleClient,
     settings: Settings,
 ) -> tuple[int, list[str], float]:
+    """对外入口，与 ingest_paths 等价，供路由层调用。"""
     return await ingest_paths(paths, collection, client, settings)
 

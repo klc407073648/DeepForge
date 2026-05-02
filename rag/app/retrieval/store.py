@@ -1,9 +1,9 @@
+"""Chroma 持久化客户端与 向量集合 collection。"""
 from pathlib import Path
 from typing import Any
 
 import chromadb
 from chromadb.api import ClientAPI
-
 
 def get_chroma_client(persist_dir: Path) -> ClientAPI:
     persist_dir.mkdir(parents=True, exist_ok=True)
