@@ -7,10 +7,16 @@ from app.config import Settings
 from app.generation.llm import OpenAICompatibleClient
 from app.ingestion.chunking import TextChunk, chunk_text
 from app.ingestion.loaders import load_document, safe_source_name
+from app.logging_config import get_logger
+
+log = get_logger(__name__)
+
 
 def _delete_source_chunks(collection: object, source: str) -> None:
     """删除向量库中某一 source（文件名）下的全部旧 chunk。"""
+    log.debug("Deleting existing vectors for source=%s", source)
     collection.delete(where={"source": source})
+
 
 async def _embed_in_batches(
     client: OpenAICompatibleClient,
@@ -48,11 +54,20 @@ async def ingest_paths(
             chunk_overlap=settings.chunk_overlap,
         )
         if not chunks:
+            log.warning("Skipping empty chunks after chunking source=%s", source)
             continue
 
         _delete_source_chunks(collection, source)
 
         texts = [c.text for c in chunks]
+        batch_sz = settings.embedding_ingest_batch_size
+        log.debug(
+            "Embedding source=%s chunks=%s batch_size=%s backend=%s",
+            source,
+            len(texts),
+            batch_sz,
+            settings.embedding_backend,
+        )
         embeddings = await _embed_in_batches(client, texts, batch_size=settings.embedding_ingest_batch_size)
 
         ids = [f"{uuid.uuid4().hex}_{i}" for i in range(len(chunks))]
@@ -72,8 +87,15 @@ async def ingest_paths(
         )
         total_chunks += len(chunks)
         sources_out.append(source)
+        log.info("Indexed source=%s chunks=%s", source, len(chunks))
 
     elapsed = time.perf_counter() - t0
+    log.info(
+        "Ingest pipeline finished total_chunks=%s sources=%s elapsed_s=%.3f",
+        total_chunks,
+        sources_out,
+        elapsed,
+    )
     return total_chunks, sources_out, elapsed
 
 async def ingest_documents(

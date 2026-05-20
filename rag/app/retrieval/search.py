@@ -4,6 +4,10 @@ from typing import Any
 
 from app.config import Settings
 from app.generation.llm import OpenAICompatibleClient
+from app.logging_config import get_logger
+
+
+log = get_logger(__name__)
 
 
 @dataclass
@@ -30,6 +34,12 @@ async def search_relevant_chunks(
         include=["documents", "metadatas", "distances"],
     )
 
+    log.debug(
+        "Chroma query done top_k=%s collection=%s",
+        settings.top_k,
+        getattr(collection, "name", ""),
+    )
+
     ids = res.get("ids", [[]])[0] or []
     documents = res.get("documents", [[]])[0] or []
     metadatas = res.get("metadatas", [[]])[0] or []
@@ -49,4 +59,9 @@ async def search_relevant_chunks(
                 distance=dist,
             )
         )
+    log.debug(
+        "Retrieval results count=%s best_distance=%s",
+        len(out),
+        min((c.distance for c in out), default=None),
+    )
     return out

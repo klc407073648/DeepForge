@@ -7,10 +7,13 @@ from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from app.config import Settings, settings, MAX_UPLOAD_BYTES
 from app.generation.llm import OpenAICompatibleClient
 from app.generation.prompts import build_messages
+from app.logging_config import configure_logging, get_logger
 from app.ingestion.pipeline import ingest_documents
 from app.models import Citation, HealthResponse, IngestResponse, QueryRequest, QueryResponse
 from app.retrieval.search import search_relevant_chunks
 from app.retrieval.store import get_chroma_client, get_or_create_collection
+
+log = get_logger(__name__)
 
 _chroma_client: Any = None
 _collection: Any = None
@@ -71,9 +74,17 @@ def require_query_config(s: Settings) -> None:
 async def lifespan(app: FastAPI):
     global _chroma_client, _collection
     s = settings
+    configure_logging(s.log_level, s.resolved_log_file)
+    log.info(
+        "Logging ready: level=%s, file=%s",
+        s.log_level,
+        str(s.resolved_log_file) if s.resolved_log_file else "(console only)",
+    )
     _chroma_client = get_chroma_client(s.chroma_persist_dir)
     _collection = get_or_create_collection(_chroma_client, s.collection_name)
+    log.debug("Chroma ready: persist_dir=%s collection=%s", s.chroma_persist_dir, s.collection_name)
     yield
+    log.info("Shutting down: closing vector store handles")
     _collection = None
     _chroma_client = None
 
@@ -99,6 +110,7 @@ app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=li
 @app.get("/health", response_model=HealthResponse)
 async def health(s: Settings = Depends(get_settings)) -> HealthResponse:
     ready, detail = _service_ready_detail(s)
+    log.debug("GET /health ready=%s detail=%s", ready, detail)
     return HealthResponse(
         status="ok",
         app=s.app_name,
@@ -118,6 +130,12 @@ async def _save_uploads_to_temp(
             continue
         data = await uf.read()
         if len(data) > MAX_UPLOAD_BYTES:
+            log.warning(
+                "Upload rejected oversized name=%s bytes=%s max=%s",
+                uf.filename,
+                len(data),
+                MAX_UPLOAD_BYTES,
+            )
             raise HTTPException(
                 status_code=413,
                 detail=f"File {uf.filename} exceeds {MAX_UPLOAD_BYTES} bytes",
@@ -149,9 +167,17 @@ async def ingest(
     try:
         paths = await _save_uploads_to_temp([file], raw_dir)
         if not paths:
+            log.warning("POST /ingest rejected: no valid file")
             raise HTTPException(status_code=400, detail="No valid file uploaded")
 
+        log.info("POST /ingest file=%s", paths[0].name if paths else "")
         n, sources, elapsed = await ingest_documents(paths, collection, client, s)
+        log.info(
+            "POST /ingest done chunks=%s sources=%s elapsed_s=%s",
+            n,
+            sources,
+            round(elapsed, 3),
+        )
         return IngestResponse(indexed_chunks=n, sources=sources, seconds=round(elapsed, 3))
     finally:
         for p in paths:
@@ -182,9 +208,21 @@ async def ingest_batch(
     try:
         paths = await _save_uploads_to_temp(files, raw_dir)
         if not paths:
+            log.warning("POST /ingest/batch rejected: no valid files")
             raise HTTPException(status_code=400, detail="No valid files uploaded")
 
+        log.info(
+            "POST /ingest/batch files=%s count=%s",
+            [p.name for p in paths],
+            len(paths),
+        )
         n, sources, elapsed = await ingest_documents(paths, collection, client, s)
+        log.info(
+            "POST /ingest/batch done chunks=%s sources=%s elapsed_s=%s",
+            n,
+            sources,
+            round(elapsed, 3),
+        )
         return IngestResponse(indexed_chunks=n, sources=sources, seconds=round(elapsed, 3))
     finally:
         for p in paths:
@@ -204,9 +242,11 @@ async def query(
 ) -> QueryResponse:
     require_query_config(s)
 
+    log.info("POST /query question_len=%s", len(body.question))
     chunks = await search_relevant_chunks(body.question, collection, client, s)
 
     if not chunks:
+        log.warning("POST /query: no chunks retrieved")
         return QueryResponse(
             answer="知识库中暂无相关内容，请先上传并索引文档。",
             citations=[],
@@ -215,6 +255,11 @@ async def query(
 
     best = min(chunks, key=lambda c: c.distance)
     if s.max_retrieval_distance is not None and best.distance > s.max_retrieval_distance:
+        log.warning(
+            "POST /query: best distance exceeds threshold distance=%s max=%s",
+            best.distance,
+            s.max_retrieval_distance,
+        )
         return QueryResponse(
             answer="在知识库中未找到与问题足够相关的可靠片段。",
             citations=[],
@@ -223,6 +268,12 @@ async def query(
 
     messages, mapping = build_messages(body.question, chunks, s)
     answer = await client.chat_completion(messages)
+    log.info(
+        "POST /query answered chunks_used=%s best_distance=%s answer_len=%s",
+        len(mapping),
+        best.distance,
+        len(answer),
+    )
 
     citations = [
         Citation(

@@ -1,8 +1,14 @@
 ﻿"""与 OpenAI 兼容的 Embedding / Chat HTTP 客户端，以及可选的本地 sentence-transformers 嵌入。"""
 import asyncio
 from typing import Any
+
 import httpx
+
 from app.config import Settings, normalize_openai_v1_base
+from app.logging_config import get_logger
+
+log = get_logger(__name__)
+
 
 class OpenAICompatibleClient:
     """封装 embed 与 chat 调用；embedding 可走远端 API 或 EMBEDDING_BACKEND=local 本地模型。"""
@@ -80,17 +86,37 @@ class OpenAICompatibleClient:
         if self._settings.embedding_backend == "local":
             return await self._embed_local(texts)
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            r = await client.post(
-                f"{self._embed_base}/embeddings",
-                headers=self._embedding_headers(),
-                json={
-                    "model": self._settings.embedding_model,
-                    "input": texts,
-                },
+        log.debug(
+            "HTTP embeddings batch model=%s n_texts=%s",
+            self._settings.embedding_model,
+            len(texts),
+        )
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                r = await client.post(
+                    f"{self._embed_base}/embeddings",
+                    headers=self._embedding_headers(),
+                    json={
+                        "model": self._settings.embedding_model,
+                        "input": texts,
+                    },
+                )
+                r.raise_for_status()
+                data: Any = r.json()
+        except httpx.HTTPStatusError as e:
+            body = ""
+            try:
+                body = e.response.text[:500]
+            except Exception:
+                pass
+            log.error(
+                "Embeddings HTTP error status=%s url=%s body_snippet=%r",
+                e.response.status_code,
+                str(e.request.url),
+                body,
             )
-            r.raise_for_status()
-            data: Any = r.json()
+            raise
+
         items = data.get("data", [])
         items_sorted = sorted(items, key=lambda x: x.get("index", 0))
         return [item["embedding"] for item in items_sorted]
@@ -101,16 +127,34 @@ class OpenAICompatibleClient:
         temperature: float = 0.2,
     ) -> str:
         """调用 /chat/completions，返回助手回复正文（strip 后）。"""
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            r = await client.post(
-                f"{self._chat_base}/chat/completions",
-                headers=self._chat_headers(),
-                json={
-                    "model": self._settings.chat_model,
-                    "messages": messages,
-                    "temperature": temperature,
-                },
+        log.debug("Chat completions model=%s messages=%s", self._settings.chat_model, len(messages))
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                r = await client.post(
+                    f"{self._chat_base}/chat/completions",
+                    headers=self._chat_headers(),
+                    json={
+                        "model": self._settings.chat_model,
+                        "messages": messages,
+                        "temperature": temperature,
+                    },
+                )
+                r.raise_for_status()
+                data: Any = r.json()
+        except httpx.HTTPStatusError as e:
+            body = ""
+            try:
+                body = e.response.text[:500]
+            except Exception:
+                pass
+            log.error(
+                "Chat HTTP error status=%s url=%s body_snippet=%r",
+                e.response.status_code,
+                str(e.request.url),
+                body,
             )
-            r.raise_for_status()
-            data: Any = r.json()
-        return data["choices"][0]["message"]["content"].strip()
+            raise
+
+        content = data["choices"][0]["message"]["content"]
+        log.debug("Chat completion reply_chars=%s", len(content or ""))
+        return content.strip()

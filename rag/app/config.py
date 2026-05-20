@@ -91,6 +91,30 @@ class Settings(BaseSettings):
     app_name: str = Field(default="rag-service", validation_alias="APP_NAME")
     app_version: str = Field(default="0.1.0", validation_alias="APP_VERSION")
 
+    log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL", description="DEBUG/INFO/WARNING/ERROR/CRITICAL")
+    log_file: str = Field(
+        default="logs/rag-service.log",
+        validation_alias="LOG_FILE",
+        description="日志文件路径；留空则仅控制台",
+    )
+
+    @field_validator("log_level", mode="before")
+    @classmethod
+    def normalize_log_level(cls, v: object) -> str:
+        allowed = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
+        s = "" if v is None else str(v).strip().upper()
+        if not s:
+            return "INFO"
+        if s not in allowed:
+            raise ValueError(f"LOG_LEVEL must be one of {sorted(allowed)}")
+        return s
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def resolved_log_file(self) -> Path | None:
+        s = self.log_file.strip()
+        return Path(s) if s else None
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def resolved_embedding_base_url(self) -> str:
