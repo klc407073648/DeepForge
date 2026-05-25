@@ -7,5 +7,7 @@ __pycache__/
 .mypy_cache/
 data/chroma/
 data/raw/*
+data/runtime_config.json
 !data/raw/.gitkeep
+logs/
 .specstory

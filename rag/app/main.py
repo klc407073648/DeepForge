@@ -1,17 +1,45 @@
 ﻿from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Any
+from urllib.parse import unquote
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import Settings, settings, MAX_UPLOAD_BYTES
+from app.documents import delete_document, get_document_detail, list_indexed_documents
 from app.generation.llm import OpenAICompatibleClient
 from app.generation.prompts import build_messages
 from app.logging_config import configure_logging, get_logger
 from app.ingestion.pipeline import ingest_documents
-from app.models import Citation, HealthResponse, IngestResponse, QueryRequest, QueryResponse
+from app.models import (
+    ChunkingSettings,
+    Citation,
+    CollectionInfo,
+    CollectionsResponse,
+    DocumentDetailResponse,
+    DocumentInfo,
+    DocumentsResponse,
+    HealthResponse,
+    IngestResponse,
+    KeyConfigItem,
+    KeyConfigListResponse,
+    KeyConfigUpsertRequest,
+    ModelsResponse,
+    QueryRequest,
+    QueryResponse,
+)
 from app.retrieval.search import search_relevant_chunks
 from app.retrieval.store import get_chroma_client, get_or_create_collection
+from app.runtime_config import (
+    delete_key_config,
+    get_chunking_settings,
+    get_effective_settings,
+    list_available_models,
+    list_key_configs,
+    update_chunking_settings,
+    upsert_key_config,
+)
 
 log = get_logger(__name__)
 
@@ -64,16 +92,10 @@ def require_query_config(s: Settings) -> None:
             detail="CHAT_API_KEY or OPENAI_API_KEY is required for chat",
         )
 
-# @asynccontextmanager 是 Python contextlib 模块提供的一个装饰器，
-# 它的核心作用是将一个异步生成器函数（async def 函数中包含 yield）转变为一个异步上下文管理器，
-# 从而可以优雅地与 async with 语句配合使用。
-
-# 在 yield 之前做启动逻辑，yield 之后做关闭逻辑。
-# 函数功能：获取单例配置settings，并将向量库做一次初始化
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _chroma_client, _collection
-    s = settings
+    s = get_effective_settings()
     configure_logging(s.log_level, s.resolved_log_file)
     log.info(
         "Logging ready: level=%s, file=%s",
@@ -88,9 +110,8 @@ async def lifespan(app: FastAPI):
     _collection = None
     _chroma_client = None
 
-# 获取相关配置
 def get_settings() -> Settings:
-    return settings
+    return get_effective_settings()
 
 
 def get_collection() -> Any:
@@ -99,14 +120,28 @@ def get_collection() -> Any:
     return _collection
 
 
-def get_llm_client() -> OpenAICompatibleClient:
-    return OpenAICompatibleClient(settings)
-# 获取相关配置
+def get_collection_by_name(name: str) -> Any:
+    if _chroma_client is None:
+        raise HTTPException(status_code=503, detail="Vector store not ready")
+    return get_or_create_collection(_chroma_client, name)
 
-# 主程序
+
+def get_llm_client() -> OpenAICompatibleClient:
+    return OpenAICompatibleClient(get_effective_settings())
+
 app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
 
-# 健康度检查
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/health", response_model=HealthResponse)
 async def health(s: Settings = Depends(get_settings)) -> HealthResponse:
     ready, detail = _service_ready_detail(s)
@@ -119,7 +154,85 @@ async def health(s: Settings = Depends(get_settings)) -> HealthResponse:
         detail=detail,
     )
 
-# 上传内容存储
+@app.get("/documents", response_model=DocumentsResponse)
+async def documents(collection: Any = Depends(get_collection)) -> DocumentsResponse:
+    docs = list_indexed_documents(collection)
+    return DocumentsResponse(
+        documents=[DocumentInfo(**d) for d in docs],
+        total=len(docs),
+    )
+
+@app.get("/documents/{source:path}", response_model=DocumentDetailResponse)
+async def document_detail(
+    source: str,
+    collection: Any = Depends(get_collection),
+) -> DocumentDetailResponse:
+    decoded = unquote(source)
+    detail = get_document_detail(collection, decoded)
+    if detail is None:
+        raise HTTPException(status_code=404, detail=f"Document not found: {decoded}")
+    return DocumentDetailResponse(**detail)
+
+
+@app.delete("/documents/{source:path}")
+async def remove_document(source: str, collection: Any = Depends(get_collection)) -> dict[str, Any]:
+    decoded = unquote(source)
+    deleted = delete_document(collection, decoded)
+    if deleted == 0:
+        raise HTTPException(status_code=404, detail=f"Document not found: {decoded}")
+    log.info("DELETE /documents/%s removed_chunks=%s", decoded, deleted)
+    return {"source": decoded, "deleted_chunks": deleted}
+
+@app.get("/settings/chunking", response_model=ChunkingSettings)
+async def get_chunking() -> ChunkingSettings:
+    data = get_chunking_settings()
+    return ChunkingSettings(**data)
+
+@app.put("/settings/chunking", response_model=ChunkingSettings)
+async def put_chunking(body: ChunkingSettings) -> ChunkingSettings:
+    try:
+        data = update_chunking_settings(body.chunk_size, body.chunk_overlap)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return ChunkingSettings(**data)
+
+@app.get("/settings/keys", response_model=KeyConfigListResponse)
+async def get_keys() -> KeyConfigListResponse:
+    return KeyConfigListResponse(items=[KeyConfigItem(**item) for item in list_key_configs()])
+
+@app.put("/settings/keys", response_model=KeyConfigItem)
+async def put_key(body: KeyConfigUpsertRequest) -> KeyConfigItem:
+    try:
+        item = upsert_key_config(body.name, body.value)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return KeyConfigItem(**item)
+
+@app.delete("/settings/keys/{name}")
+async def remove_key(name: str) -> dict[str, str]:
+    try:
+        delete_key_config(name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return {"name": name, "status": "deleted"}
+
+@app.get("/settings/models", response_model=ModelsResponse)
+async def get_models(s: Settings = Depends(get_settings)) -> ModelsResponse:
+    models = list_available_models()
+    return ModelsResponse(models=models, default_model=s.chat_model)
+
+@app.get("/collections", response_model=CollectionsResponse)
+async def collections(
+    s: Settings = Depends(get_settings),
+    collection: Any = Depends(get_collection),
+) -> CollectionsResponse:
+    docs = list_indexed_documents(collection)
+    return CollectionsResponse(
+        collections=[
+            CollectionInfo(name=s.collection_name, document_count=len(docs)),
+        ]
+    )
+
 async def _save_uploads_to_temp(
     uploads: list[UploadFile],
     raw_dir: Path,
@@ -146,18 +259,16 @@ async def _save_uploads_to_temp(
         paths.append(dest)
     return paths
 
-# 导入
 @app.post("/ingest", response_model=IngestResponse)
 async def ingest(
     file: Annotated[
         UploadFile,
-        File(description="单个文档：.txt / .md / .pdf（Swagger 里应显示为「选择文件」）"),
+        File(description="单个文档：.txt / .md / .pdf"),
     ],
     s: Settings = Depends(get_settings),
     collection: Any = Depends(get_collection),
     client: OpenAICompatibleClient = Depends(get_llm_client),
 ) -> IngestResponse:
-    """单文件上传；在 Swagger 中可正确选择本地文件。多文件请用 ``POST /ingest/batch`` 或多次调用本接口。"""
     require_embedding_config(s)
 
     raw_dir = Path("data/raw")
@@ -187,18 +298,16 @@ async def ingest(
                 except OSError:
                     pass
 
-# 批量导入
 @app.post("/ingest/batch", response_model=IngestResponse)
 async def ingest_batch(
     files: Annotated[
         list[UploadFile],
-        File(description="同一字段名重复添加多个文件；若界面仍异常，请用 curl 或单文件接口 /ingest"),
+        File(description="多文件上传"),
     ],
     s: Settings = Depends(get_settings),
     collection: Any = Depends(get_collection),
     client: OpenAICompatibleClient = Depends(get_llm_client),
 ) -> IngestResponse:
-    """多文件上传（部分 Swagger 版本对数组文件展示不佳，优先用 ``/ingest`` 或 curl）。"""
     require_embedding_config(s)
 
     raw_dir = Path("data/raw")
@@ -232,18 +341,39 @@ async def ingest_batch(
                 except OSError:
                     pass
 
-# 知识检索
 @app.post("/query", response_model=QueryResponse)
 async def query(
     body: QueryRequest,
     s: Settings = Depends(get_settings),
-    collection: Any = Depends(get_collection),
     client: OpenAICompatibleClient = Depends(get_llm_client),
 ) -> QueryResponse:
     require_query_config(s)
 
-    log.info("POST /query question_len=%s", len(body.question))
-    chunks = await search_relevant_chunks(body.question, collection, client, s)
+    collection_name = body.collection or s.collection_name
+    collection = get_collection_by_name(collection_name)
+
+    if body.sources is not None and len(body.sources) == 0:
+        log.warning("POST /query rejected: no sources selected")
+        return QueryResponse(
+            answer="请至少选择一个知识库文档后再提问。",
+            citations=[],
+            no_relevant_context=True,
+        )
+
+    log.info(
+        "POST /query question_len=%s model=%s collection=%s sources=%s",
+        len(body.question),
+        body.model,
+        collection_name,
+        len(body.sources) if body.sources else "all",
+    )
+    chunks = await search_relevant_chunks(
+        body.question,
+        collection,
+        client,
+        s,
+        sources=body.sources,
+    )
 
     if not chunks:
         log.warning("POST /query: no chunks retrieved")
@@ -267,7 +397,7 @@ async def query(
         )
 
     messages, mapping = build_messages(body.question, chunks, s)
-    answer = await client.chat_completion(messages)
+    answer = await client.chat_completion(messages, model=body.model)
     log.info(
         "POST /query answered chunks_used=%s best_distance=%s answer_len=%s",
         len(mapping),

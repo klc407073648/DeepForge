@@ -125,16 +125,18 @@ class OpenAICompatibleClient:
         self,
         messages: list[dict[str, str]],
         temperature: float = 0.2,
+        model: str | None = None,
     ) -> str:
         """调用 /chat/completions，返回助手回复正文（strip 后）。"""
-        log.debug("Chat completions model=%s messages=%s", self._settings.chat_model, len(messages))
+        model_name = model or self._settings.chat_model
+        log.debug("Chat completions model=%s messages=%s", model_name, len(messages))
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
                 r = await client.post(
                     f"{self._chat_base}/chat/completions",
                     headers=self._chat_headers(),
                     json={
-                        "model": self._settings.chat_model,
+                        "model": model_name,
                         "messages": messages,
                         "temperature": temperature,
                     },

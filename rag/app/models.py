@@ -27,9 +27,77 @@ class Citation(BaseModel):
 
 class QueryRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=8000)
+    model: str | None = Field(default=None, max_length=128)
+    collection: str | None = Field(default=None, max_length=128)
+    sources: list[str] | None = Field(default=None, max_length=256)
 
 
 class QueryResponse(BaseModel):
     answer: str
     citations: list[Citation]
     no_relevant_context: bool = False
+
+
+class DocumentInfo(BaseModel):
+    source: str
+    format: str
+    chunk_count: int
+    uploaded_at: str
+    status: str
+
+
+class DocumentsResponse(BaseModel):
+    documents: list[DocumentInfo]
+    total: int
+
+
+class ChunkInfo(BaseModel):
+    id: str
+    chunk_index: int
+    text: str
+    source: str
+
+
+class DocumentDetailResponse(BaseModel):
+    source: str
+    format: str
+    chunk_count: int
+    status: str
+    chunks: list[ChunkInfo]
+
+
+class ChunkingSettings(BaseModel):
+    chunk_size: int = Field(..., ge=64, le=8192)
+    chunk_overlap: int = Field(..., ge=0)
+
+
+class CollectionInfo(BaseModel):
+    name: str
+    document_count: int
+
+
+class CollectionsResponse(BaseModel):
+    collections: list[CollectionInfo]
+
+
+class KeyConfigItem(BaseModel):
+    name: str
+    label: str
+    masked_value: str
+    purpose: str
+    configured: bool
+    source: str
+
+
+class KeyConfigListResponse(BaseModel):
+    items: list[KeyConfigItem]
+
+
+class KeyConfigUpsertRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=64)
+    value: str = Field(default="")
+
+
+class ModelsResponse(BaseModel):
+    models: list[str]
+    default_model: str

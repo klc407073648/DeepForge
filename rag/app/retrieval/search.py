@@ -23,16 +23,21 @@ async def search_relevant_chunks(
     collection: Any,
     client: OpenAICompatibleClient,
     settings: Settings,
+    sources: list[str] | None = None,
 ) -> list[RetrievedChunk]:
     vectors = await client.embed_texts([question])
     if not vectors:
         return []
 
-    res = collection.query(
-        query_embeddings=vectors,
-        n_results=settings.top_k,
-        include=["documents", "metadatas", "distances"],
-    )
+    query_kwargs: dict[str, Any] = {
+        "query_embeddings": vectors,
+        "n_results": settings.top_k,
+        "include": ["documents", "metadatas", "distances"],
+    }
+    if sources:
+        query_kwargs["where"] = {"source": {"$in": sources}}
+
+    res = collection.query(**query_kwargs)
 
     log.debug(
         "Chroma query done top_k=%s collection=%s",
