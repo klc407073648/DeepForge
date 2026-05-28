@@ -1,0 +1,11 @@
+请根据以下需求文档，生成代码生成计划。
+
+输出必须包含以下章节：
+{{sections}}
+
+---
+
+## 需求文档
+
+{{requirements}}
+{{repo_context_block}}

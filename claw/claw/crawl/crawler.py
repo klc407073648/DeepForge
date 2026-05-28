@@ -14,8 +14,9 @@ from claw.config import CrawlConfig
 from claw.crawl.fetcher import Fetcher
 from claw.crawl.link_filter import LinkFilter, normalize_url
 from claw.crawl.parser import parse_html
+from claw.crawl.rules import SiteRule, apply_site_rule_to_crawl, load_rules, match_rule
 from claw.storage.manifest import Manifest, PageRecord, new_manifest
-from claw.storage.writer import write_page_markdown
+from claw.storage.writer import is_empty_page, write_page_markdown
 
 
 @dataclass
@@ -30,6 +31,9 @@ class CrawlResult:
     output_dir: Path
     manifest: Manifest
     pages_fetched: int
+    pages_saved: int = 0
+    pages_empty: int = 0
+    matched_rule: str | None = None
 
 
 async def crawl(
@@ -38,14 +42,23 @@ async def crawl(
     config: CrawlConfig,
     *,
     dry_run: bool = False,
+    site_rule: SiteRule | None = None,
+    force_rule_name: str | None = None,
+    rules_dir: Path | None = None,
 ) -> CrawlResult:
     normalized_root = normalize_url(root_url)
     if not normalized_root:
         raise ValueError(f"Invalid URL: {root_url}")
 
+    rules = load_rules(rules_dir or config.rules_dir)
+    matched = site_rule or match_rule(normalized_root, rules, force_name=force_rule_name)
+    apply_site_rule_to_crawl(config, matched)
+
     if not dry_run:
         output_dir.mkdir(parents=True, exist_ok=True)
     manifest = new_manifest(normalized_root)
+    manifest.matched_rule = matched.name if matched else None
+
     link_filter = LinkFilter(
         normalized_root,
         max_depth=config.max_depth,
@@ -57,19 +70,23 @@ async def crawl(
     visited: set[str] = set()
     queue: deque[CrawlTask] = deque([CrawlTask(normalized_root, 0, None)])
     pages_fetched = 0
+    pages_saved = 0
+    pages_empty = 0
     fetcher = Fetcher(config)
     semaphore = asyncio.Semaphore(config.max_concurrency)
 
     async with httpx.AsyncClient() as client:
 
         async def process(task: CrawlTask) -> None:
-            nonlocal pages_fetched
+            nonlocal pages_fetched, pages_saved, pages_empty
             async with semaphore:
                 try:
                     result = await fetcher.fetch(client, task.url)
-                    parsed = parse_html(result.html, result.final_url)
+                    parsed = parse_html(result.html, result.final_url, matched)
+                    pages_fetched += 1
 
                     if dry_run:
+                        status = "empty" if is_empty_page(parsed.text_length, config.min_content_chars) else "dry-run"
                         manifest.add_page(
                             PageRecord(
                                 path="",
@@ -78,21 +95,46 @@ async def crawl(
                                 depth=task.depth,
                                 parent_url=task.parent_url,
                                 links_to=parsed.links,
-                                status="dry-run",
+                                status=status,
+                                text_length=parsed.text_length,
                             )
                         )
-                    else:
-                        _, record = write_page_markdown(
-                            output_dir,
-                            parsed,
-                            depth=task.depth,
-                            parent_url=task.parent_url,
-                            no_images=config.no_images,
-                            max_content_chars=config.max_content_chars,
-                        )
-                        manifest.add_page(record)
+                        if status == "empty":
+                            pages_empty += 1
+                        else:
+                            next_depth = task.depth + 1
+                            for link in parsed.links:
+                                if link_filter.should_follow(link, next_depth, visited):
+                                    queue.append(CrawlTask(link, next_depth, task.url))
+                        return
 
-                    pages_fetched += 1
+                    if is_empty_page(parsed.text_length, config.min_content_chars):
+                        pages_empty += 1
+                        manifest.add_page(
+                            PageRecord(
+                                path="",
+                                source_url=task.url,
+                                title=parsed.title,
+                                depth=task.depth,
+                                parent_url=task.parent_url,
+                                links_to=parsed.links,
+                                status="empty",
+                                text_length=parsed.text_length,
+                            )
+                        )
+                        return
+
+                    _, record = write_page_markdown(
+                        output_dir,
+                        parsed,
+                        depth=task.depth,
+                        parent_url=task.parent_url,
+                        no_images=config.no_images,
+                        max_content_chars=config.max_content_chars,
+                    )
+                    manifest.add_page(record)
+                    pages_saved += 1
+
                     next_depth = task.depth + 1
                     for link in parsed.links:
                         if link_filter.should_follow(link, next_depth, visited):
@@ -132,7 +174,14 @@ async def crawl(
         if manifest.errors:
             (output_dir / "errors.log").write_text("\n".join(manifest.errors) + "\n", encoding="utf-8")
 
-    return CrawlResult(output_dir=output_dir, manifest=manifest, pages_fetched=pages_fetched)
+    return CrawlResult(
+        output_dir=output_dir,
+        manifest=manifest,
+        pages_fetched=pages_fetched,
+        pages_saved=pages_saved,
+        pages_empty=pages_empty,
+        matched_rule=manifest.matched_rule,
+    )
 
 
 def default_output_dir(base: Path, url: str, run_id: str | None = None) -> Path:

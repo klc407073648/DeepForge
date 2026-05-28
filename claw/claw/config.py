@@ -35,6 +35,11 @@ class CrawlConfig:
         ignore_robots: bool = False,
         no_images: bool = False,
         max_content_chars: int = 100_000,
+        min_content_chars: int = 80,
+        content_selectors: list[str] | None = None,
+        title_selector: str | None = None,
+        remove_selectors: list[str] | None = None,
+        rules_dir: Path | None = None,
     ) -> None:
         self.max_depth = max_depth
         self.max_pages = max_pages
@@ -58,6 +63,11 @@ class CrawlConfig:
         self.ignore_robots = ignore_robots
         self.no_images = no_images
         self.max_content_chars = max_content_chars
+        self.min_content_chars = min_content_chars
+        self.content_selectors = content_selectors or []
+        self.title_selector = title_selector
+        self.remove_selectors = remove_selectors or []
+        self.rules_dir = rules_dir
 
 
 class PlanConfig:
@@ -69,10 +79,16 @@ class PlanConfig:
         model: str = "deepseek-chat",
         max_input_chars: int = 120_000,
         temperature: float = 0.2,
+        system_prompt_file: str | None = None,
+        user_prompt_file: str | None = None,
+        sections: list[str] | None = None,
     ) -> None:
         self.model = model
         self.max_input_chars = max_input_chars
         self.temperature = temperature
+        self.system_prompt_file = system_prompt_file
+        self.user_prompt_file = user_prompt_file
+        self.sections = sections or []
 
 
 class Settings(BaseSettings):
@@ -133,6 +149,8 @@ def build_crawl_config(settings_path: Path | None = None, **overrides: Any) -> C
         "ignore_robots": crawl.get("ignore_robots", False),
         "no_images": crawl.get("no_images", False),
         "max_content_chars": crawl.get("max_content_chars", 100_000),
+        "min_content_chars": crawl.get("min_content_chars", 80),
+        "rules_dir": Path(crawl["rules_dir"]) if crawl.get("rules_dir") else None,
     }
     params.update({k: v for k, v in overrides.items() if v is not None})
     return CrawlConfig(**params)
@@ -151,6 +169,9 @@ def build_plan_config(
         "model": plan.get("model", cfg.claw_chat_model),
         "max_input_chars": plan.get("max_input_chars", 120_000),
         "temperature": plan.get("temperature", 0.2),
+        "system_prompt_file": plan.get("system_prompt_file"),
+        "user_prompt_file": plan.get("user_prompt_file"),
+        "sections": plan.get("sections"),
     }
     params.update({k: v for k, v in overrides.items() if v is not None})
     return PlanConfig(**params)

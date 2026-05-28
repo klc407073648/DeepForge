@@ -35,6 +35,8 @@ claw plan .claw/cache/example.com/20260528T140000Z --repo-context ./README.md
 
 # 或一步完成
 claw run https://example.com/spec --depth 2 --repo-context ./README.md
+
+claw run https://example.com/spec --depth 2  --model deepseek-v4-pro
 ```
 
 ---
@@ -111,6 +113,8 @@ max_content_chars = 100000 # 单页 Markdown 最大字符数
 model = "deepseek-chat"    # 未设置时读取 CLAW_CHAT_MODEL
 max_input_chars = 120000   # 送入 LLM 的最大字符数
 temperature = 0.2
+system_prompt_file = ".claw/prompts/system.md"   # 可选
+user_prompt_file = ".claw/prompts/user.md"       # 可选
 ```
 
 指定其他配置文件：
@@ -118,6 +122,83 @@ temperature = 0.2
 ```bash
 claw fetch https://example.com/spec --config ./my-config.toml
 ```
+
+### 站点抓取规则（`.claw/rules/*.toml`）
+
+针对有特征的站点（如掘金、GitHub Wiki），可编写独立规则文件，按 URL/host 自动匹配。
+
+```bash
+cp .claw/rules/juejin.toml.example .claw/rules/juejin.toml
+```
+
+规则示例：
+
+```toml
+name = "juejin"
+match = ["juejin.cn"]
+priority = 10
+
+[crawl]
+content_selectors = [".article-content", "article"]
+title_selector = "h1"
+remove_selectors = [".author-info", ".action-bar"]
+include_patterns = ["*/post/*"]
+exclude_patterns = ["*/user/*", "*/followers*", "*/following*"]
+min_content_chars = 100
+title_cleanup = " - 掘金$"
+
+[plan]
+system_prompt_file = ".claw/prompts/system.md"
+user_prompt_file = ".claw/prompts/user.md"
+```
+
+| 字段 | 说明 |
+|------|------|
+| `match` | 匹配的 host 或 URL（glob，支持 `re:` 前缀） |
+| `priority` | 优先级，数字越大越优先 |
+| `content_selectors` | 正文 CSS 选择器 |
+| `include/exclude_patterns` | 覆盖全局链接规则（非追加） |
+| `title_cleanup` | 标题清理正则 |
+
+使用：
+
+```bash
+# 自动匹配（verbose 显示 matched rule）
+claw fetch https://juejin.cn/post/xxx --depth 1 -v
+
+# 强制指定规则
+claw fetch https://example.com/spec --rule juejin --rules-dir .claw/rules
+```
+
+匹配到的规则名会写入 `manifest.json` 的 `matched_rule` 字段。
+
+### 自定义 LLM 提示词
+
+复制示例文件：
+
+```bash
+cp .claw/prompts/system.md.example .claw/prompts/system.md
+cp .claw/prompts/user.md.example .claw/prompts/user.md
+```
+
+在 `.claw.toml` 中引用，或命令行临时指定：
+
+```bash
+claw plan .claw/cache/run1 \
+  --system-prompt .claw/prompts/system.md \
+  --user-prompt .claw/prompts/user.md
+```
+
+**user 模板占位符**：
+
+| 占位符 | 含义 |
+|--------|------|
+| `{{requirements}}` | 聚合后的需求 Markdown |
+| `{{repo_context}}` | 仓库上下文纯文本 |
+| `{{repo_context_block}}` | 带标题的仓库上下文块 |
+| `{{sections}}` | 输出章节列表 |
+
+**优先级**：CLI 参数 > 站点规则 `[plan]` > `.claw.toml [plan]` > 内置默认。
 
 ---
 
@@ -141,7 +222,10 @@ claw fetch <URL> [OPTIONS]
 | `--dry-run` | 只发现链接，不写 Markdown 文件 | 关闭 |
 | `--ignore-robots` | 忽略 robots.txt（调试用） | 关闭 |
 | `--no-images` | Markdown 中不保留图片 | 关闭 |
-| `--config PATH` | 指定 `.claw.toml` 路径 | 自动查找当前目录 |
+| `--min-content-chars N` | 空页过滤阈值（可见文本字符数） | `80` |
+| `--rule NAME` | 强制使用指定站点规则 | 自动匹配 |
+| `--rules-dir PATH` | 站点规则目录 | `.claw/rules` |
+| `--config PATH` | 指定 `.claw.toml` 路径 | 自动查找 |
 | `-v, --verbose` | 输出详细信息 | 关闭 |
 
 **示例**
@@ -179,6 +263,10 @@ claw plan <CACHE_DIR> [OPTIONS]
 | `--out PATH` | 计划输出文件路径 | `.claw/plans/<timestamp>-plan.md` |
 | `--repo-context PATH` | 目标仓库上下文（如 README.md） | 无 |
 | `--model NAME` | 覆盖模型名 | `.env` / `.claw.toml` 中的配置 |
+| `--system-prompt PATH` | 自定义 system prompt 文件 | 内置默认 |
+| `--user-prompt PATH` | 自定义 user prompt 模板文件 | 内置默认 |
+| `--rule NAME` | 强制站点规则（影响 plan 段配置） | manifest 中的 matched_rule |
+| `--rules-dir PATH` | 站点规则目录 | `.claw/rules` |
 | `--config PATH` | 指定 `.claw.toml` 路径 | 自动查找 |
 
 **示例**
@@ -215,6 +303,10 @@ claw run <URL> [OPTIONS]
 | `--plan-out PATH` | 计划输出文件路径 | `.claw/plans/<timestamp>-plan.md` |
 | `--repo-context PATH` | 目标仓库上下文 | 无 |
 | `--model NAME` | 覆盖模型名 | `.env` / `.claw.toml` 中的配置 |
+| `--system-prompt PATH` | 自定义 system prompt 文件 | 内置默认 |
+| `--user-prompt PATH` | 自定义 user prompt 模板文件 | 内置默认 |
+| `--rule NAME` | 强制站点规则 | 自动匹配 |
+| `--rules-dir PATH` | 站点规则目录 | `.claw/rules` |
 | `--config PATH` | 指定 `.claw.toml` 路径 | 自动查找 |
 | `-v, --verbose` | 输出详细信息 | 关闭 |
 

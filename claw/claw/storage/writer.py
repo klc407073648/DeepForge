@@ -21,6 +21,11 @@ def slug_from_url(url: str) -> str:
     return slug or "index"
 
 
+def is_empty_page(text_length: int, min_content_chars: int) -> bool:
+    """Return True when visible text is shorter than the minimum threshold."""
+    return text_length < min_content_chars
+
+
 def write_page_markdown(
     output_dir: Path,
     page: ParsedPage,
@@ -29,7 +34,7 @@ def write_page_markdown(
     parent_url: str | None,
     no_images: bool,
     max_content_chars: int,
-) -> tuple[Path, PageRecord]:
+) -> tuple[Path | None, PageRecord]:
     output_dir.mkdir(parents=True, exist_ok=True)
     slug = slug_from_url(page.url)
     filename = f"{slug}.md"
@@ -64,5 +69,6 @@ def write_page_markdown(
         parent_url=parent_url,
         links_to=page.links,
         status="ok",
+        text_length=page.text_length,
     )
     return path, record

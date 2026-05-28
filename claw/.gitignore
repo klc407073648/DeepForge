@@ -4,7 +4,6 @@
 venv/
 
 # Claw runtime output
-.claw/
 
 # Python
 __pycache__/
