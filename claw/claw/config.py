@@ -36,10 +36,6 @@ class CrawlConfig:
         no_images: bool = False,
         max_content_chars: int = 100_000,
         min_content_chars: int = 80,
-        content_selectors: list[str] | None = None,
-        title_selector: str | None = None,
-        remove_selectors: list[str] | None = None,
-        rules_dir: Path | None = None,
     ) -> None:
         self.max_depth = max_depth
         self.max_pages = max_pages
@@ -64,10 +60,6 @@ class CrawlConfig:
         self.no_images = no_images
         self.max_content_chars = max_content_chars
         self.min_content_chars = min_content_chars
-        self.content_selectors = content_selectors or []
-        self.title_selector = title_selector
-        self.remove_selectors = remove_selectors or []
-        self.rules_dir = rules_dir
 
 
 class PlanConfig:
@@ -82,6 +74,8 @@ class PlanConfig:
         system_prompt_file: str | None = None,
         user_prompt_file: str | None = None,
         sections: list[str] | None = None,
+        context_dir: Path | None = None,
+        context_max_chars: int = 20_000,
     ) -> None:
         self.model = model
         self.max_input_chars = max_input_chars
@@ -89,6 +83,8 @@ class PlanConfig:
         self.system_prompt_file = system_prompt_file
         self.user_prompt_file = user_prompt_file
         self.sections = sections or []
+        self.context_dir = context_dir or Path(".claw/context")
+        self.context_max_chars = context_max_chars
 
 
 class Settings(BaseSettings):
@@ -113,6 +109,7 @@ class Settings(BaseSettings):
 
     cache_dir: Path = Field(default=Path(".claw/cache"), validation_alias="CLAW_CACHE_DIR")
     plans_dir: Path = Field(default=Path(".claw/plans"), validation_alias="CLAW_PLANS_DIR")
+    logs_dir: Path = Field(default=Path(".claw/logs"), validation_alias="CLAW_LOGS_DIR")
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -138,7 +135,7 @@ def build_crawl_config(settings_path: Path | None = None, **overrides: Any) -> C
     crawl = data.get("crawl", {})
     params = {
         "max_depth": crawl.get("max_depth", 2),
-        "max_pages": crawl.get("max_pages", 50),
+        "max_pages": crawl.get("max_pages", 20),
         "same_domain_only": crawl.get("same_domain_only", True),
         "max_concurrency": crawl.get("max_concurrency", 5),
         "request_delay_ms": crawl.get("request_delay_ms", 200),
@@ -150,7 +147,6 @@ def build_crawl_config(settings_path: Path | None = None, **overrides: Any) -> C
         "no_images": crawl.get("no_images", False),
         "max_content_chars": crawl.get("max_content_chars", 100_000),
         "min_content_chars": crawl.get("min_content_chars", 80),
-        "rules_dir": Path(crawl["rules_dir"]) if crawl.get("rules_dir") else None,
     }
     params.update({k: v for k, v in overrides.items() if v is not None})
     return CrawlConfig(**params)
@@ -172,6 +168,8 @@ def build_plan_config(
         "system_prompt_file": plan.get("system_prompt_file"),
         "user_prompt_file": plan.get("user_prompt_file"),
         "sections": plan.get("sections"),
+        "context_dir": Path(plan["context_dir"]) if plan.get("context_dir") else None,
+        "context_max_chars": plan.get("context_max_chars", 20_000),
     }
     params.update({k: v for k, v in overrides.items() if v is not None})
     return PlanConfig(**params)

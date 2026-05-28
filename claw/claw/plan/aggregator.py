@@ -7,15 +7,66 @@ from pathlib import Path
 from claw.storage.manifest import Manifest
 
 
-def load_repo_context(path: Path | None) -> str | None:
+def _truncate(text: str, max_chars: int) -> str:
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + "\n\n[truncated]"
+
+
+def load_repo_context(path: Path | None, *, max_chars: int = 20_000) -> str | None:
     if path is None:
         return None
     if not path.is_file():
         raise FileNotFoundError(f"Repo context not found: {path}")
     text = path.read_text(encoding="utf-8")
-    if len(text) > 20_000:
-        return text[:20_000] + "\n\n[truncated]"
-    return text
+    return _truncate(text, max_chars)
+
+
+def load_repo_context_dir(context_dir: Path, *, max_chars: int = 20_000) -> str | None:
+    if not context_dir.is_dir():
+        return None
+
+    md_files = sorted(
+        p for p in context_dir.glob("*.md") if p.is_file() and not p.name.endswith(".example")
+    )
+    if not md_files:
+        return None
+
+    parts: list[str] = []
+    total = 0
+    for md_path in md_files:
+        content = md_path.read_text(encoding="utf-8").strip()
+        if not content:
+            continue
+        block = f"# 文件: {md_path.name}\n\n{content}\n"
+        if total + len(block) > max_chars:
+            remaining = max_chars - total
+            if remaining > 100:
+                parts.append(block[:remaining] + "\n\n[truncated]")
+            break
+        parts.append(block)
+        total += len(block)
+
+    if not parts:
+        return None
+    return "\n---\n\n".join(parts)
+
+
+def resolve_repo_context(
+    single_file: Path | None,
+    context_dir: Path,
+    *,
+    max_chars: int = 20_000,
+) -> tuple[str | None, str]:
+    """Return (context text, source description)."""
+    if single_file is not None:
+        return load_repo_context(single_file, max_chars=max_chars), f"file:{single_file}"
+
+    dir_context = load_repo_context_dir(context_dir, max_chars=max_chars)
+    if dir_context is not None:
+        return dir_context, f"dir:{context_dir}"
+
+    return None, "none"
 
 
 def aggregate_requirements(cache_dir: Path, max_chars: int) -> str:

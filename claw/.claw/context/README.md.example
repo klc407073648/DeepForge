@@ -1,0 +1,21 @@
+# 目标项目上下文
+
+将你要实现需求的**目标业务项目**说明放在此目录（**不是** claw 工具本身的 README）。
+
+## 用法
+
+1. 复制本文件为 `README.md`：
+
+   ```bash
+   cp .claw/context/README.md.example .claw/context/README.md
+   ```
+
+2. 替换为目标项目的 README 内容，或从兄弟项目复制：
+
+   ```bash
+   cp ../portal/README.md .claw/context/README.md
+   ```
+
+3. 运行 `claw plan` / `claw run` 时会**自动读取**此目录下的 `*.md` 文件（跳过 `*.example`）。
+
+可选：添加 `architecture.md` 描述系统架构（可参考 `architecture.md.example`）。

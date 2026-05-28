@@ -27,7 +27,6 @@ class Manifest:
     created_at: str
     pages: list[PageRecord] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
-    matched_rule: str | None = None
 
     def add_page(self, page: PageRecord) -> None:
         self.pages.append(page)
@@ -41,7 +40,6 @@ class Manifest:
         payload = {
             "root_url": self.root_url,
             "created_at": self.created_at,
-            "matched_rule": self.matched_rule,
             "pages": [asdict(p) for p in self.pages],
             "errors": self.errors,
         }
@@ -58,7 +56,6 @@ class Manifest:
             created_at=data.get("created_at", ""),
             pages=pages,
             errors=data.get("errors", []),
-            matched_rule=data.get("matched_rule"),
         )
 
 

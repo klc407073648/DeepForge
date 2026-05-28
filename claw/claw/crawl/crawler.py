@@ -14,7 +14,6 @@ from claw.config import CrawlConfig
 from claw.crawl.fetcher import Fetcher
 from claw.crawl.link_filter import LinkFilter, normalize_url
 from claw.crawl.parser import parse_html
-from claw.crawl.rules import SiteRule, apply_site_rule_to_crawl, load_rules, match_rule
 from claw.storage.manifest import Manifest, PageRecord, new_manifest
 from claw.storage.writer import is_empty_page, write_page_markdown
 
@@ -33,7 +32,6 @@ class CrawlResult:
     pages_fetched: int
     pages_saved: int = 0
     pages_empty: int = 0
-    matched_rule: str | None = None
 
 
 async def crawl(
@@ -42,22 +40,14 @@ async def crawl(
     config: CrawlConfig,
     *,
     dry_run: bool = False,
-    site_rule: SiteRule | None = None,
-    force_rule_name: str | None = None,
-    rules_dir: Path | None = None,
 ) -> CrawlResult:
     normalized_root = normalize_url(root_url)
     if not normalized_root:
         raise ValueError(f"Invalid URL: {root_url}")
 
-    rules = load_rules(rules_dir or config.rules_dir)
-    matched = site_rule or match_rule(normalized_root, rules, force_name=force_rule_name)
-    apply_site_rule_to_crawl(config, matched)
-
     if not dry_run:
         output_dir.mkdir(parents=True, exist_ok=True)
     manifest = new_manifest(normalized_root)
-    manifest.matched_rule = matched.name if matched else None
 
     link_filter = LinkFilter(
         normalized_root,
@@ -82,7 +72,7 @@ async def crawl(
             async with semaphore:
                 try:
                     result = await fetcher.fetch(client, task.url)
-                    parsed = parse_html(result.html, result.final_url, matched)
+                    parsed = parse_html(result.html, result.final_url)
                     pages_fetched += 1
 
                     if dry_run:
@@ -180,7 +170,6 @@ async def crawl(
         pages_fetched=pages_fetched,
         pages_saved=pages_saved,
         pages_empty=pages_empty,
-        matched_rule=manifest.matched_rule,
     )
 
 

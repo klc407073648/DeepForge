@@ -30,11 +30,15 @@ cp .env.example .env
 # 2. 抓取需求页面
 claw fetch https://example.com/spec --depth 2
 
-# 3. 生成代码计划（将路径替换为上一步输出的 cache 目录）
-claw plan .claw/cache/example.com/20260528T140000Z --repo-context ./README.md
+# 3. 配置目标业务项目上下文（非 claw 自身 README）
+cp .claw/context/README.md.example .claw/context/README.md
+# 编辑或复制目标项目说明，例如：cp ../portal/README.md .claw/context/README.md
+
+# 4. 生成代码计划（将路径替换为上一步输出的 cache 目录）
+claw plan .claw/cache/example.com/20260528T140000Z
 
 # 或一步完成
-claw run https://example.com/spec --depth 2 --repo-context ./README.md
+claw run https://example.com/spec --depth 2
 
 claw run https://example.com/spec --depth 2  --model deepseek-v4-pro
 ```
@@ -123,55 +127,6 @@ user_prompt_file = ".claw/prompts/user.md"       # 可选
 claw fetch https://example.com/spec --config ./my-config.toml
 ```
 
-### 站点抓取规则（`.claw/rules/*.toml`）
-
-针对有特征的站点（如掘金、GitHub Wiki），可编写独立规则文件，按 URL/host 自动匹配。
-
-```bash
-cp .claw/rules/juejin.toml.example .claw/rules/juejin.toml
-```
-
-规则示例：
-
-```toml
-name = "juejin"
-match = ["juejin.cn"]
-priority = 10
-
-[crawl]
-content_selectors = [".article-content", "article"]
-title_selector = "h1"
-remove_selectors = [".author-info", ".action-bar"]
-include_patterns = ["*/post/*"]
-exclude_patterns = ["*/user/*", "*/followers*", "*/following*"]
-min_content_chars = 100
-title_cleanup = " - 掘金$"
-
-[plan]
-system_prompt_file = ".claw/prompts/system.md"
-user_prompt_file = ".claw/prompts/user.md"
-```
-
-| 字段 | 说明 |
-|------|------|
-| `match` | 匹配的 host 或 URL（glob，支持 `re:` 前缀） |
-| `priority` | 优先级，数字越大越优先 |
-| `content_selectors` | 正文 CSS 选择器 |
-| `include/exclude_patterns` | 覆盖全局链接规则（非追加） |
-| `title_cleanup` | 标题清理正则 |
-
-使用：
-
-```bash
-# 自动匹配（verbose 显示 matched rule）
-claw fetch https://juejin.cn/post/xxx --depth 1 -v
-
-# 强制指定规则
-claw fetch https://example.com/spec --rule juejin --rules-dir .claw/rules
-```
-
-匹配到的规则名会写入 `manifest.json` 的 `matched_rule` 字段。
-
 ### 自定义 LLM 提示词
 
 复制示例文件：
@@ -198,7 +153,37 @@ claw plan .claw/cache/run1 \
 | `{{repo_context_block}}` | 带标题的仓库上下文块 |
 | `{{sections}}` | 输出章节列表 |
 
-**优先级**：CLI 参数 > 站点规则 `[plan]` > `.claw.toml [plan]` > 内置默认。
+**优先级**：CLI 参数 > `.claw.toml [plan]` > 内置默认。
+
+### 目标项目上下文（`.claw/context/`）
+
+`claw plan` / `claw run` 需要了解**你要实现需求的目标业务项目**，而不是 claw 工具本身的 README。
+
+推荐在 `.claw/context/` 放置目标项目说明：
+
+```bash
+cp .claw/context/README.md.example .claw/context/README.md
+# 从目标项目复制，例如：
+cp ../portal/README.md .claw/context/README.md
+# 可选架构说明
+cp .claw/context/architecture.md.example .claw/context/architecture.md
+```
+
+未指定 `--repo-context` 时，自动聚合 `.claw/context/*.md`（跳过 `*.example`）。
+
+```toml
+# .claw.toml
+[plan]
+context_dir = ".claw/context"
+context_max_chars = 20000
+```
+
+显式指定单文件（优先级高于目录）：
+
+```bash
+claw plan .claw/cache/run1 --repo-context ../portal/README.md
+claw plan .claw/cache/run1 -v   # verbose 显示 context 来源
+```
 
 ---
 
@@ -223,8 +208,6 @@ claw fetch <URL> [OPTIONS]
 | `--ignore-robots` | 忽略 robots.txt（调试用） | 关闭 |
 | `--no-images` | Markdown 中不保留图片 | 关闭 |
 | `--min-content-chars N` | 空页过滤阈值（可见文本字符数） | `80` |
-| `--rule NAME` | 强制使用指定站点规则 | 自动匹配 |
-| `--rules-dir PATH` | 站点规则目录 | `.claw/rules` |
 | `--config PATH` | 指定 `.claw.toml` 路径 | 自动查找 |
 | `-v, --verbose` | 输出详细信息 | 关闭 |
 
@@ -261,13 +244,13 @@ claw plan <CACHE_DIR> [OPTIONS]
 |------|------|--------|
 | `CACHE_DIR` | 抓取结果目录（含 `manifest.json` 和 `*.md`） | — |
 | `--out PATH` | 计划输出文件路径 | `.claw/plans/<timestamp>-plan.md` |
-| `--repo-context PATH` | 目标仓库上下文（如 README.md） | 无 |
+| `--repo-context PATH` | 目标业务项目上下文单文件（覆盖 `.claw/context/`） | 自动读 `.claw/context/` |
+| `--context-dir PATH` | 目标项目上下文目录 | `.claw/context` |
 | `--model NAME` | 覆盖模型名 | `.env` / `.claw.toml` 中的配置 |
 | `--system-prompt PATH` | 自定义 system prompt 文件 | 内置默认 |
 | `--user-prompt PATH` | 自定义 user prompt 模板文件 | 内置默认 |
-| `--rule NAME` | 强制站点规则（影响 plan 段配置） | manifest 中的 matched_rule |
-| `--rules-dir PATH` | 站点规则目录 | `.claw/rules` |
 | `--config PATH` | 指定 `.claw.toml` 路径 | 自动查找 |
+| `-v, --verbose` | 输出详细信息（含 context 来源） | 关闭 |
 
 **示例**
 
@@ -275,10 +258,11 @@ claw plan <CACHE_DIR> [OPTIONS]
 # 基础用法
 claw plan .claw/cache/example.com/20260528T140000Z
 
-# 指定输出路径和仓库上下文
-claw plan .claw/cache/run1 \
-  --out ./plans/feature-a-plan.md \
-  --repo-context ./README.md
+# 指定输出路径（自动使用 .claw/context/ 作为目标项目上下文）
+claw plan .claw/cache/run1 --out ./plans/feature-a-plan.md
+
+# 或显式指定目标项目 README
+claw plan .claw/cache/run1 --repo-context ../portal/README.md
 
 # 临时切换模型
 claw plan .claw/cache/run1 --model deepseek-reasoner
@@ -301,12 +285,11 @@ claw run <URL> [OPTIONS]
 | `--max-pages N` | 最多抓取页数 | `50` |
 | `--out PATH` | 抓取结果目录 | `.claw/cache/<host>/<timestamp>/` |
 | `--plan-out PATH` | 计划输出文件路径 | `.claw/plans/<timestamp>-plan.md` |
-| `--repo-context PATH` | 目标仓库上下文 | 无 |
+| `--repo-context PATH` | 目标业务项目上下文单文件 | 自动读 `.claw/context/` |
+| `--context-dir PATH` | 目标项目上下文目录 | `.claw/context` |
 | `--model NAME` | 覆盖模型名 | `.env` / `.claw.toml` 中的配置 |
 | `--system-prompt PATH` | 自定义 system prompt 文件 | 内置默认 |
 | `--user-prompt PATH` | 自定义 user prompt 模板文件 | 内置默认 |
-| `--rule NAME` | 强制站点规则 | 自动匹配 |
-| `--rules-dir PATH` | 站点规则目录 | `.claw/rules` |
 | `--config PATH` | 指定 `.claw.toml` 路径 | 自动查找 |
 | `-v, --verbose` | 输出详细信息 | 关闭 |
 
@@ -320,7 +303,7 @@ claw run https://example.com/spec
 claw run https://example.com/spec \
   --depth 2 \
   --max-pages 30 \
-  --repo-context ./README.md \
+  --repo-context ../portal/README.md \
   --plan-out ./plans/my-plan.md \
   -v
 ```
@@ -339,9 +322,8 @@ claw fetch https://docs.example.com/feature-x --depth 2 -v
 
 # 检查 .claw/cache/.../ 下的 Markdown 是否完整
 
-# 第二步：生成计划
+# 第二步：生成计划（默认读取 .claw/context/）
 claw plan .claw/cache/docs.example.com/<run-id> \
-  --repo-context ./README.md \
   --out ./plans/feature-x-plan.md
 ```
 
@@ -350,9 +332,7 @@ claw plan .claw/cache/docs.example.com/<run-id> \
 适合需求页面结构清晰、配置已调好的情况。
 
 ```bash
-claw run https://docs.example.com/feature-x \
-  --depth 2 \
-  --repo-context ./README.md
+claw run https://docs.example.com/feature-x --depth 2
 ```
 
 ### 场景 3：大型文档站（限制范围）
@@ -378,7 +358,7 @@ claw plan ./docs/requirements
 生成计划后，将 `.claw/plans/*.md` 作为 Agent 输入：
 
 ```bash
-claw run https://example.com/spec --repo-context ./README.md
+claw run https://example.com/spec
 # 打开 .claw/plans/<timestamp>-plan.md 交给 Cursor Agent 执行
 ```
 
@@ -504,9 +484,35 @@ claw fetch https://example.com/spec --depth 3 -v
 
 ### 计划内容质量不佳
 
-- 提供 `--repo-context ./README.md` 帮助 LLM 了解目标仓库
+- 在 `.claw/context/` 放置目标业务项目 README，或使用 `--repo-context ../your-project/README.md`
 - 检查抓取的 Markdown 是否包含完整需求
 - 调大 `[plan] max_input_chars` 或减小 `[crawl] max_pages` 避免无关页面干扰
+
+---
+
+## 步骤输出
+
+默认会打印主流流程步骤（抓取配置、聚合需求、调用 LLM 等）。加 `-v` 可查看完整 LLM 输入：
+
+```bash
+claw plan .claw/cache/run1 -v
+```
+
+`-v` 额外输出：
+
+- 使用的**模型**、temperature、API Base
+- 需求文档 / 仓库上下文的**字符数**与来源
+- 完整的 **System 提示词** 和 **User 提示词**（过长时截断显示）
+
+静默模式（仅保留最终结果）：
+
+```bash
+claw run https://example.com/spec -q
+```
+
+控制台输出会同步写入 `.claw/logs/<timestamp>-<command>.log`（纯文本，无 Rich 样式）。运行结束会提示日志路径。
+
+可通过环境变量 `CLAW_LOGS_DIR` 修改日志目录。
 
 ---
 
