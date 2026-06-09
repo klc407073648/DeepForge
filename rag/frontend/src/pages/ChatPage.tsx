@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { getDocuments, getHealth, getModels, queryRag } from '../api/rag'
 import { ApiError } from '../api/client'
-import type { ChatMessage, Citation } from '../types/api'
+import type { ChatMessage, Citation, DocumentInfo } from '../types/api'
+
+const EMPTY_DOCUMENTS: DocumentInfo[] = []
 
 export default function ChatPage() {
   const [question, setQuestion] = useState('')
@@ -22,15 +24,24 @@ export default function ChatPage() {
   const { data: docsData } = useQuery({ queryKey: ['documents'], queryFn: getDocuments })
 
   const models = modelsData?.models ?? []
-  const documents = docsData?.documents ?? []
+  const documents = docsData?.documents ?? EMPTY_DOCUMENTS
   const selectedModel = model || modelsData?.default_model || models[0] || ''
 
   useEffect(() => {
     const all = documents.map((d) => d.source)
     setSelectedSources((prev) => {
-      if (prev.length === 0) return all
+      if (prev.length === 0) {
+        if (all.length === 0) return prev
+        return all
+      }
       const next = prev.filter((s) => all.includes(s))
-      return next.length > 0 ? next : all
+      if (next.length > 0) {
+        if (next.length === prev.length && next.every((s, i) => s === prev[i])) return prev
+        return next
+      }
+      if (all.length === 0) return prev
+      if (all.length === prev.length && all.every((s, i) => s === prev[i])) return prev
+      return all
     })
   }, [documents])
 

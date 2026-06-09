@@ -1,0 +1,4 @@
+RAG E2E 测试文档。
+
+Playwright 端到端测试会上传本文件并建立向量索引。
+检索关键词：Playwright E2E 向量索引。
