@@ -1,0 +1,19 @@
+{
+  "req_id": "REQ-XXX",
+  "stage": "DRAFT_PLAN",
+  "plan_version": 1,
+  "diagram_version": 1,
+  "source_url": "",
+  "failure_count": 0,
+  "max_failures_before_escalate": 3,
+  "approvals": {},
+  "history": [
+    {
+      "at": "",
+      "action": "init",
+      "from_stage": null,
+      "to_stage": "DRAFT_PLAN",
+      "by": "system"
+    }
+  ]
+}

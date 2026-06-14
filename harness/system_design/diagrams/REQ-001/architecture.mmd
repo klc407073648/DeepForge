@@ -1,0 +1,5 @@
+flowchart LR
+  cli[workflow.py status] --> loader[load_state]
+  loader --> formatter[status_formatter]
+  formatter --> output[HumanReadableOutput]
+  nextMap[NEXT_SKILL map] --> formatter

@@ -1,0 +1,51 @@
+---
+description: Enforces closed-loop workflow gates. Agents must follow stage constraints and use workflow skills.
+globs:
+alwaysApply: true
+---
+
+# 闭环开发工作流规则
+
+完整使用说明见 [WORKFLOW.md](../../WORKFLOW.md)。
+
+本项目使用闭环开发系统。修改业务代码前必须遵守以下规则。
+
+## 流程阶段
+
+```
+DRAFT_PLAN → PLAN_REVIEW → DIAGRAM_DRAFT → DIAGRAM_APPROVED
+→ CODE_GEN → TEST_GEN → CI_RUNNING → PASSED | FAILED
+```
+
+## 硬门禁
+
+1. **未 APPROVED 方案前**：禁止生成业务代码（`src/`, `tests/` 下新功能代码）
+2. **未 APPROVED 概念图前**：禁止调用 `workflow-implement` skill
+3. 写代码前运行：`python scripts/workflow/workflow.py validate REQ-xxx --action implement`
+4. CI 失败时使用 `workflow-fix` skill，禁止大规模重构
+
+## 对应 Skills
+
+| 阶段 | Skill |
+|------|-------|
+| 需求解析 | `workflow-requirement` |
+| 方案生成 | `workflow-architect` |
+| 概念图 | `workflow-diagram` |
+| 代码实现 | `workflow-implement` |
+| 测试 | `workflow-tdd` |
+| CI 修复 | `workflow-fix` |
+
+## 常用命令
+
+```bash
+python scripts/workflow/workflow.py init REQ-xxx --url "..." --title "..."
+python scripts/workflow/workflow.py status REQ-xxx
+python scripts/workflow/workflow.py approve REQ-xxx --gate plan --by user
+python scripts/workflow/run_ci.py REQ-xxx
+```
+
+## 产物目录
+
+- `.workflows/{req_id}/state.json` — 状态机
+- `requirements/`, `plans/`, `diagrams/`, `reviews/` — 各阶段产物
+- `checklists/` — 人工审核清单

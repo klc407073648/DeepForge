@@ -1,0 +1,104 @@
+{
+  "req_id": "REQ-001",
+  "stage": "PASSED",
+  "plan_version": 1,
+  "diagram_version": 1,
+  "source_url": "internal/pilot",
+  "failure_count": 0,
+  "max_failures_before_escalate": 3,
+  "approvals": {
+    "plan": {
+      "by": "pilot-user",
+      "at": "2026-06-14T00:00:00Z"
+    },
+    "diagram": {
+      "by": "pilot-user",
+      "at": "2026-06-14T00:00:00Z"
+    },
+    "code": {
+      "by": "ci",
+      "at": "2026-06-14T00:00:00Z"
+    }
+  },
+  "history": [
+    {
+      "at": "2026-06-14T00:00:00Z",
+      "action": "init",
+      "from_stage": null,
+      "to_stage": "DRAFT_PLAN",
+      "by": "pilot"
+    },
+    {
+      "at": "2026-06-14T00:01:00Z",
+      "action": "advance",
+      "from_stage": "DRAFT_PLAN",
+      "to_stage": "PLAN_REVIEW",
+      "by": "pilot"
+    },
+    {
+      "at": "2026-06-14T00:02:00Z",
+      "action": "approve",
+      "from_stage": "PLAN_REVIEW",
+      "to_stage": "DIAGRAM_DRAFT",
+      "by": "pilot-user",
+      "reason": "approved gate: plan"
+    },
+    {
+      "at": "2026-06-14T00:03:00Z",
+      "action": "approve",
+      "from_stage": "DIAGRAM_DRAFT",
+      "to_stage": "DIAGRAM_APPROVED",
+      "by": "pilot-user",
+      "reason": "approved gate: diagram"
+    },
+    {
+      "at": "2026-06-14T00:04:00Z",
+      "action": "advance",
+      "from_stage": "DIAGRAM_APPROVED",
+      "to_stage": "CODE_GEN",
+      "by": "pilot"
+    },
+    {
+      "at": "2026-06-14T00:05:00Z",
+      "action": "advance",
+      "from_stage": "CODE_GEN",
+      "to_stage": "TEST_GEN",
+      "by": "pilot"
+    },
+    {
+      "at": "2026-06-14T00:06:00Z",
+      "action": "ci_pass",
+      "from_stage": "CI_RUNNING",
+      "to_stage": "PASSED",
+      "by": "run_ci"
+    },
+    {
+      "at": "2026-06-14T14:38:22Z",
+      "action": "ci_start",
+      "from_stage": "PASSED",
+      "to_stage": "CI_RUNNING",
+      "by": "run_ci"
+    },
+    {
+      "at": "2026-06-14T14:38:24Z",
+      "action": "ci_pass",
+      "from_stage": "CI_RUNNING",
+      "to_stage": "PASSED",
+      "by": "run_ci"
+    }
+  ],
+  "last_ci": {
+    "at": "2026-06-14T14:38:24Z",
+    "passed": true,
+    "results": [
+      {
+        "name": "lint",
+        "exit_code": 0
+      },
+      {
+        "name": "test",
+        "exit_code": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+name: Workflow CI
+
+on:
+  push:
+    branches: [main, master, feat/**]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dev dependencies
+        run: pip install pytest ruff
+
+      - name: Lint
+        run: python -m ruff check src tests scripts/workflow
+
+      - name: Test
+        run: python -m pytest tests -v --tb=short
+
+      - name: Workflow orchestrator self-test
+        run: python -m unittest discover -s scripts/workflow/tests -v
+
+  workflow-gate:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check REQ coverage matrix exists for changed REQs
+        run: |
+          python scripts/workflow/check_pr_gates.py || true

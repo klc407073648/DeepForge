@@ -1,0 +1,19 @@
+=== lint (ruff) exit=0 ===
+All checks passed!
+
+=== test exit=0 ===
+============================= test session starts =============================
+platform win32 -- Python 3.12.5, pytest-9.0.3, pluggy-1.6.0 -- D:\software\python\python.exe
+cachedir: .pytest_cache
+rootdir: D:\code\klc\test\DeepForge\harness
+configfile: pyproject.toml
+plugins: anyio-4.9.0, langsmith-0.8.0, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 3 items
+
+tests/test_status_formatter.py::TestStatusFormatter::test_AC1_format_includes_req_stage_next PASSED [ 33%]
+tests/test_status_formatter.py::TestStatusFormatter::test_AC2_shows_plan_approved PASSED [ 66%]
+tests/test_status_formatter.py::TestStatusFormatter::test_AC3_shows_pending_approvals PASSED [100%]
+
+============================== 3 passed in 0.01s ==============================
+

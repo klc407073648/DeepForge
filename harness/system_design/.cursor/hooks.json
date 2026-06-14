@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "python .cursor/hooks/workflow-context.py"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "python .cursor/hooks/workflow-context.py",
+        "matcher": "Write|StrReplace"
+      }
+    ]
+  }
+}

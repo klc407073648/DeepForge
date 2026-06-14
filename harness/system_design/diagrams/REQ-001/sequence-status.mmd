@@ -1,0 +1,12 @@
+sequenceDiagram
+  participant User
+  participant CLI as workflow.py
+  participant State as state.json
+  participant Fmt as status_formatter
+
+  User->>CLI: status REQ-001 --human
+  CLI->>State: load_state
+  State-->>CLI: state dict
+  CLI->>Fmt: format_status_summary
+  Fmt-->>CLI: summary string
+  CLI-->>User: print summary
