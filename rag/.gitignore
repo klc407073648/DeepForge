@@ -6,6 +6,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 data/chroma/
+data/chroma-e2e/
 data/raw/*
 data/runtime_config.json
 !data/raw/.gitkeep

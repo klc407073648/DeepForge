@@ -1,0 +1,25 @@
+# Copy to .env and fill in values.
+
+EMBEDDING_BACKEND=local
+LOCAL_EMBEDDING_MODEL=BAAI/bge-small-zh-v1.5
+LOCAL_EMBEDDING_BATCH_SIZE=32
+# 可选: LOCAL_EMBEDDING_DEVICE=cpu
+OPENAI_API_KEY=sk-64b33c5573be498385e4f866dd5aca28
+OPENAI_BASE_URL=https://api.deepseek.com/v1
+CHAT_MODEL=deepseek-chat
+
+CHROMA_PERSIST_DIR=data/chroma
+COLLECTION_NAME=rag_docs
+
+CHUNK_SIZE=512
+CHUNK_OVERLAP=128
+
+TOP_K=5
+MAX_CONTEXT_CHARS=8000
+# Cosine distance from Chroma; lower is more similar. If the best chunk exceeds this, no answer is generated.
+MAX_RETRIEVAL_DISTANCE=1.25
+# Set empty or remove to disable distance-based filtering (not recommended for production).
+# MAX_RETRIEVAL_DISTANCE=
+
+APP_NAME=rag-service
+APP_VERSION=0.1.0
